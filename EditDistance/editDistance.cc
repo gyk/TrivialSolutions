@@ -22,9 +22,9 @@ inline T min3(const T& a1, const T& a2, const T& a3)
 template <typename T>
 T** alloc2d(size_t nr, size_t nc, T filled)
 {
-	auto a = (T**)new T[nr * (nc + 1)];
+	auto a = (T**)new char[nr * sizeof(T*) + nr * nc * sizeof(T)];
 	for (int i=0; i<nr; i++) {
-		a[i] = (T*)a + nr + i * nc;
+		a[i] = (T*)(a + nr) + i * nc;
 	}
 	std::fill_n(a[0], nr * nc, filled);
 	return a;
