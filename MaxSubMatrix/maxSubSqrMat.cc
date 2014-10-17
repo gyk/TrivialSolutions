@@ -14,7 +14,7 @@ template <typename T>
 T** alloc2d(size_t nr, size_t nc, T filled)
 {
 	auto a = (T**)new char[nr * sizeof(T*) + nr * nc * sizeof(T)];
-	for (int i=0; i<nr; i++) {
+	for (size_t i=0; i<nr; i++) {
 		a[i] = (T*)(a + nr) + i * nc;
 	}
 	std::fill_n(a[0], nr * nc, filled);
