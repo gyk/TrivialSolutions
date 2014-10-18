@@ -21,7 +21,7 @@ T** alloc2d(size_t nr, size_t nc, T filled)
 	return a;
 }
 
-int maxSubMatrix(int** a, int m, int n)
+int maxSquare(int** a, int m, int n)
 {
 	using std::min;
 	int best = 0;
@@ -66,7 +66,7 @@ int main(int argc, char const *argv[])
 		}
 	}
 
-	std::cout << maxSubMatrix(a, m, n);
+	std::cout << maxSquare(a, m, n);
 
 	delete[] a;
 	return 0;
