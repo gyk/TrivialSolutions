@@ -5,7 +5,7 @@
 #include <iostream>
 
 template <typename T>
-inline T min3(const T& a1, const T& a2, const T& a3)
+inline const T& min3(const T& a1, const T& a2, const T& a3)
 {
 	using std::min;
 	return min(min(a1, a2), a3);
