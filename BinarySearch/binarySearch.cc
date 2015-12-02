@@ -46,10 +46,11 @@ int bsearch_improved(T a[], T t, int l, int r)
         } else if (t > a[m]) {
             l = m + 1;
         } else {
-            while (a[m - 1] == t) {
-                --m;
+            if (m - 1 >= l && a[m - 1] == t) {
+                r = m - 1;
+            } else {
+                return m;
             }
-            return m;
         }
     }
 
