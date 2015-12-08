@@ -19,14 +19,8 @@ struct TreeNode
 
     ~TreeNode()
     {
-        // TODO: deleting a nullptr has no effect, so we don't
-        // need to check it.
-        if (this->left) {
-            delete this->left;
-        }
-        if (this->right) {
-            delete this->right;
-        }
+        delete this->left;
+        delete this->right;
     }
 
     T value;

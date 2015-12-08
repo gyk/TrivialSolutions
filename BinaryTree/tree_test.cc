@@ -27,7 +27,6 @@ vector<int> randomInts(size_t n)
     while (n--) {
         data.push_back(std::rand() % 500);
     }
-    std::random_shuffle(data.begin(), data.end());  // TODO
 
     return data;
 }
