@@ -96,7 +96,7 @@ int main()
     cout << "\n================\n";
 
     // Test tree traversal
-    vector<int> preOrderSeq, inOrderSeq, postOrderSeq, layerSeq;
+    vector<int> preOrderSeq, inOrderSeq, postOrderSeq, levelOrderSeq;
     vector<int> tempSeq;
     auto visitor = [&tempSeq](int& v) { tempSeq.push_back(v); };
 
@@ -115,10 +115,10 @@ int main()
     swap(tempSeq, postOrderSeq);
     printContainer(postOrderSeq);
 
-    cout << "Layerwise traversal:\n";
-    tree.layerwise(visitor);
-    swap(tempSeq, layerSeq);
-    printContainer(layerSeq);
+    cout << "Level-order traversal:\n";
+    tree.levelOrder(visitor);
+    swap(tempSeq, levelOrderSeq);
+    printContainer(levelOrderSeq);
 
     // Test reconstructing tree
     auto tree2 = buildFromTraversals(preOrderSeq, inOrderSeq);

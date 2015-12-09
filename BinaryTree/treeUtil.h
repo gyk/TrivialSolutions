@@ -100,7 +100,7 @@ Tree<T> buildFromTraversals(vector<T>& preOrderSeq, vector<T>& inOrderSeq)
     Tree<T> tree;
     tree.root = parse(0, inOrderSeq.size() - 1);
     int treeSize = 0;
-    tree.layerwise([&treeSize](const T&) { treeSize++; });
+    tree.levelOrder([&treeSize](const T&) { treeSize++; });
     tree.nNodes = treeSize;
     return tree;
 }

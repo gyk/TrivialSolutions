@@ -52,7 +52,7 @@ public:
     void preOrder(std::function<void (T& val)> visitor);
     void inOrder(std::function<void (T& val)> visitor);
     void postOrder(std::function<void (T& val)> visitor);
-    void layerwise(std::function<void (T& val)> visitor);
+    void levelOrder(std::function<void (T& val)> visitor);
 
     friend Tree<T> buildFromTraversals<>
         (std::vector<T>& preOrderSeq, std::vector<T>& inOrderSeq);
@@ -268,7 +268,7 @@ void Tree<T>::postOrder(std::function<void (T& val)> visitor)
 }
 
 template <typename T>
-void Tree<T>::layerwise(std::function<void (T& val)> visitor)
+void Tree<T>::levelOrder(std::function<void (T& val)> visitor)
 {
     TreeNode<T>* root = this->root;
     if (!root) {
