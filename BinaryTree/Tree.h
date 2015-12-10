@@ -174,16 +174,16 @@ size_t Tree<T>::size() const
 template <typename T>
 void Tree<T>::preOrder(std::function<void (T& val)> visitor)
 {
-    TreeNode<T>* root = this->root;
-    if (!root) {
+    TreeNode<T>* node = this->root;
+    if (!node) {
         return;
     }
     assert(visitor);
 
     std::stack<TreeNode<T>*> s;
-    s.push(root);
+    s.push(node);
     while (!s.empty()) {
-        TreeNode<T>* node = s.top();
+        node = s.top();
         s.pop();
         visitor(node->value);
 
@@ -199,71 +199,90 @@ void Tree<T>::preOrder(std::function<void (T& val)> visitor)
 template <typename T>
 void Tree<T>::inOrder(std::function<void (T& val)> visitor)
 {
-    TreeNode<T>* root = this->root;
-    if (!root) {
-        return;
-    }
     assert(visitor);
-
+    TreeNode<T>* node = this->root;
     std::stack<TreeNode<T>*> s;
-    s.push(root);
-    TreeNode<T>* last = nullptr;
-    while (!s.empty()) {
-        TreeNode<T>* node = s.top();
-        s.pop();
-        if (node->left == nullptr) {
-            visitor(node->value);
-            last = node;
-            if (node->right) {
-                s.push(node->right);
-            }
+    for (;;) {
+        if (node) {  // ignores nullptr by not pushing it
+            s.push(node);
+            node = node->left;
             continue;
         }
-        if (last && last->right == nullptr) {
-            // going up
-            visitor(node->value);
-            last = node;
-            continue;
-        } else {  // node->left != nullptr
-            if (node->right) {
-                s.push(node->right);
-            }
+
+        if (s.empty()) {
+            break;
+        }
+        node = s.top();
+        s.pop();
+        visitor(node->value);
+        node = node->right;
+    }
+}
+
+// My first attempt to write Tree<T>::postOrder. It involves some 
+// cumbersome control flow but is easier to read:
+
+/*
+template <typename T>
+void Tree<T>::postOrder(std::function<void (T& val)> visitor)
+{
+    assert(visitor);
+    TreeNode<T>* node = this->root;
+    std::stack<TreeNode<T>*> s;
+    for (;;) {
+        if (node) {
             s.push(node);
-            s.push(node->left);
+            node = node->left;
+            continue;
+        }
+
+        if (s.empty()) {
+            break;
+        }
+    POP:;
+        // right should come first to handle leaves
+        if (s.top()->right == node) {
+            node = s.top();
+            s.pop();
+            visitor(node->value);
+            if (s.empty()) {
+                break;
+            }
+            if (s.top()->right == node) {
+                goto POP;
+            } else {
+                node = s.top()->right;
+            }
+        } else if (s.top()->left == node) {
+            node = s.top()->right;
         }
     }
 }
 
+*/
+
+// Here comes the simplified version:
 template <typename T>
 void Tree<T>::postOrder(std::function<void (T& val)> visitor)
 {
-    TreeNode<T>* root = this->root;
-    if (!root) {
-        return;
-    }
     assert(visitor);
-
+    TreeNode<T>* node = this->root;
     std::stack<TreeNode<T>*> s;
-    s.push(root);
-    TreeNode<T>* last = nullptr;
-    while (!s.empty()) {
-        TreeNode<T>* node = s.top();
-        s.pop();
-        if ((node->left == nullptr && node->right == nullptr) ||
-            (last && (node->right == last || node->left == last))) {
+    for (;;) {
+        while (node) {
+            s.push(node);
+            node = node->left;
+        }
+
+        goto EMPTY;
+        while (s.top()->right == node) {
+            node = s.top();
+            s.pop();
             visitor(node->value);
-            last = node;
-            continue;
+    EMPTY:
+            if (s.empty()) return;
         }
-
-        s.push(node);
-        if (node->right) {
-            s.push(node->right);
-        }
-        if (node->left) {
-            s.push(node->left);
-        }
-
+        node = s.top()->right;
     }
 }
 
