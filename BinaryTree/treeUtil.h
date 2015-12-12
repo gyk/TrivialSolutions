@@ -46,7 +46,7 @@ void printTreeDot(std::ostream& ostr, const Tree<T>& tree)
     function<void (const TreeNode<T>*)> printTree =
         [&](const TreeNode<T>* node)
     {
-        if (!node->left && !node->right) {
+        if (!node) {
             return;
         }
 
