@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstdint>
 #include <cassert>
 
 #include <stack>
@@ -37,7 +38,9 @@ template <typename T>
 class Tree
 {
 public:
-    Tree();
+    Tree() : root(nullptr), nNodes(0)
+    {
+    }
 
     ~Tree()
     {
@@ -61,11 +64,6 @@ private:
     TreeNode<T>* root;
     int nNodes;
 };
-
-template <typename T>
-Tree<T>::Tree() : root(nullptr), nNodes(0)
-{
-}
 
 template <typename T>
 void Tree<T>::insert(const T val)
@@ -110,51 +108,33 @@ template <typename T>
 void Tree<T>::remove(const T& val)
 {
     TreeNode<T>** pCur = &this->root;
-    for (;;) {
-        auto cur = *pCur;
-        if (cur == nullptr) {
-            return;
-        }
-
+    for (TreeNode<T>* cur; cur=*pCur; ) {
         if (val < cur->value) {
             pCur = &cur->left;
         } else if (val > cur->value) {
             pCur = &cur->right;
         } else {  // target found
-            this->nNodes--;
             if (!cur->left && !cur->right) {  // leaf
                 delete cur;
                 *pCur = nullptr;
-                return;
-            }
-
-            if (cur->left)  {
+            } else if (!cur->left || !cur->right) {
+                *pCur = (TreeNode<T>*)((uintptr_t)cur->left | (uintptr_t)cur->right);
+                cur->left = cur->right = nullptr;
+                delete cur;
+            } else {
                 TreeNode<T>** pMid = &cur->left;
                 while ((*pMid)->right) {
                     pMid = &(*pMid)->right;
                 }
                 cur->value = (*pMid)->value;
                 auto t = (*pMid)->left;
-                // due to TreeNode's recursive destructor
                 (*pMid)->left = nullptr;
                 assert((*pMid)->right == nullptr);
                 delete *pMid;
                 *pMid = t;
-                return;
-            } else {  // cur->right != nullptr
-                TreeNode<T>** pMid = &cur->right;
-                while ((*pMid)->left) {
-                    pMid = &(*pMid)->left;
-                }
-                cur->value = (*pMid)->value;
-                auto t = (*pMid)->right;
-                // due to TreeNode's recursive destructor
-                (*pMid)->right = nullptr;
-                assert((*pMid)->left == nullptr);
-                delete *pMid;
-                *pMid = t;
-                return;
             }
+            this->nNodes--;
+            return;
         }
     }
 }
@@ -258,7 +238,6 @@ void Tree<T>::postOrder(std::function<void (T& val)> visitor)
         }
     }
 }
-
 */
 
 // Here comes the simplified version:
@@ -273,13 +252,13 @@ void Tree<T>::postOrder(std::function<void (T& val)> visitor)
             s.push(node);
             node = node->left;
         }
-
-        goto EMPTY;
+        goto EMPTY_CHECK;
+        
         while (s.top()->right == node) {
             node = s.top();
             s.pop();
             visitor(node->value);
-    EMPTY:
+    EMPTY_CHECK:
             if (s.empty()) return;
         }
         node = s.top()->right;
@@ -289,16 +268,16 @@ void Tree<T>::postOrder(std::function<void (T& val)> visitor)
 template <typename T>
 void Tree<T>::levelOrder(std::function<void (T& val)> visitor)
 {
-    TreeNode<T>* root = this->root;
-    if (!root) {
+    TreeNode<T>* node = this->root;
+    if (!node) {
         return;
     }
     assert(visitor);
 
     std::queue<TreeNode<T>*> q;
-    q.push(root);
+    q.push(node);
     while (!q.empty()) {
-        TreeNode<T>* node = q.front();
+        node = q.front();
         q.pop();
         visitor(node->value);
         if (node->left) {
