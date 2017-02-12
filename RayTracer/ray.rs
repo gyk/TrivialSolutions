@@ -39,12 +39,13 @@ impl Vec3 {
         Vec3::dot(self, self).sqrt()
     }
 
-    fn normalize(&mut self) {
+    fn normalize(&mut self) -> Self {
         let len = self.length();
         let one_over_len = 1.0 / len;
         self.x *= one_over_len;
         self.y *= one_over_len;
         self.z *= one_over_len;
+        *self
     }
 }
 
@@ -106,6 +107,12 @@ struct Hit {
     norm: Vec3,
 }
 
+impl Hit {
+    fn is_missed(&self) -> bool {
+        return self.dist == INFINITY
+    }
+}
+
 #[derive(Debug)]
 struct Ray {
     orig: Vec3,
@@ -148,8 +155,7 @@ impl Scene for Sphere {
         if dist > hit.dist {
             hit
         } else {
-            let mut dir = ray.orig + (dist * ray.dir - self.center);
-            dir.normalize();
+            let dir = (ray.orig + (dist * ray.dir - self.center)).normalize();
             Hit {
                 dist: dist,
                 norm: dir,
@@ -183,7 +189,7 @@ fn ray_trace(light: &Vec3, ray: &Ray, scene: &Scene) -> f32 {
     };
 
     let hit = scene.intersect(hit0.clone(), ray);
-    if hit.dist == INFINITY {
+    if hit.is_missed() {
         return 0.0;
     }
 
@@ -197,10 +203,10 @@ fn ray_trace(light: &Vec3, ray: &Ray, scene: &Scene) -> f32 {
         &Ray {
             orig: p,
             dir: -1.0 * (*light),
-        }).dist < INFINITY {
-        0.0
-    } else {
+        }).is_missed() {
         -g
+    } else {
+        0.0
     }
 }
 
@@ -236,9 +242,8 @@ fn main() {
 
     let ss2 = (ss * ss) as f32;
 
-    let mut light = Vec3 { x: -1.0, y: -3.0, z: 2.0 };
-    light.normalize();
-    let s = create_scene(level, Vec3 { x: 0.0, y: -1.0, z: 0.0 }, 1.0);
+    let light = Vec3::new(-1.0, -3.0, 2.0).normalize();
+    let s = create_scene(level, Vec3::new(0.0, -1.0, 0.0), 1.0);
     println!("P2\n{} {}\n255\n", n, n);  // Today it's quite hard to find a proper P5 PGM viewer
     for y in (0 .. n).rev() {
         let y = y as f32;  // So ugly. SAD!
@@ -249,11 +254,10 @@ fn main() {
                 let dx = dx as f32;
                 for dy in 0 .. ss {
                     let dy = dy as f32;
-                    let mut dir = Vec3::new(
+                    let dir = Vec3::new(
                         x + dx / ss as f32 - n as f32 / 2.0,
                         y + dy / ss as f32 - n as f32 / 2.0,
-                        n as f32);
-                    dir.normalize();
+                        n as f32).normalize();
                     g += ray_trace(&light,
                         &Ray {
                             orig: Vec3 { x: 0.0, y: 0.0, z: -4.0 },
@@ -265,6 +269,6 @@ fn main() {
             
             print!("{} ", (0.5 + 255.0 * g / ss2) as u8);
         }
-        println!("");
+        println!();
     }
 }
