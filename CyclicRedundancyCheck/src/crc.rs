@@ -38,6 +38,82 @@ pub fn crc32_slice(data: &[u8], polynomial: &[u8]) -> Vec<u8> {
     crc32_bitvec(BitVec::from_bytes(data), BitVec::from_bytes(polynomial)).to_bytes()
 }
 
+// Optimization using lookup table
+
+const CRC_ISO_13818_1: u32 = 0x04C11DB7; // MSBit-first
+const CRC_IEEE: u32 = 0xEDB88320; // MSBit-first
+lazy_static! {
+    static ref CRC32_TABLE_MSB: [u32; 256] = make_table_msb(CRC_ISO_13818_1);
+    static ref CRC32_TABLE_LSB: [u32; 256] = make_table_lsb(CRC_IEEE);
+}
+
+/*
+
+Derivation of the table, taking MSBit-first as an example:
+
+    tbl[v] := v * 2^32 % poly
+    
+      (v * 2^8 * 2^32 + u * 2^32) % poly
+    = (tbl[v] * 2^8 + u * 2^32) % poly
+    = ((tbl[v] >> 24 + u) * 2^32) % poly + (tbl[v] & 0xFF_FFFF) * 2^8 % poly
+    = tbl[tbl[v] >> 24 ^ u] + (tbl[v] & 0xFF) << 8
+
+*/
+
+// MSBit-first
+fn make_table_msb(poly: u32) -> [u32; 256] {
+    let mut table = [0u32; 256];
+    for i in 0..256 {
+        let mut value = (i as u32) << 24;
+        for _ in 0..8 {
+            value = {
+                if (value & 0x8000_0000) != 0 {
+                    (value << 1) ^ poly
+                } else {
+                    value << 1
+                }
+            };
+        }
+        table[i] = value;
+    }
+    table
+}
+
+pub fn crc32_msb(data: &[u8]) -> u32 {
+    let mut res: u32 = 0xFFFF_FFFF;
+    for &i in data.iter() {
+        res = (res << 8) ^ CRC32_TABLE_MSB[(i ^ (res >> 24) as u8) as usize];
+    }
+    res
+}
+
+// LSBit-first
+pub fn make_table_lsb(poly: u32) -> [u32; 256] {
+    let mut table = [0u32; 256];
+    for i in 0..256 {
+        let mut value = i as u32;
+        for _ in 0..8 {
+            value = {
+                if (value & 1) == 1 {
+                    (value >> 1) ^ poly
+                } else {
+                    value >> 1
+                }
+            }
+        }
+        table[i] = value;
+    }
+    table
+}
+
+pub fn crc32_lsb(data: &[u8]) -> u32 {
+    let mut res: u32 = 0xFFFF_FFFF;
+    for &i in data.iter() {
+        res = CRC32_TABLE_LSB[((res as u8) ^ i) as usize] ^ (res >> 8)
+    }
+    !res
+}
+
 mod test {
     use super::*;
 
@@ -54,5 +130,16 @@ mod test {
         }
 
         assert!(crc32_bitvec(data, poly).eq_vec(&[true, false, false]));
+    }
+
+    #[test]
+    fn test_crc32_table() {
+        let data = [
+            0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00,
+            0x00, 0x01, 0xF0, 0x01,
+        ];
+
+        assert_eq!(crc32_msb(&data), 0x2E701905);
+        assert_eq!(crc32_lsb(b"123456789"), 0xcbf43926);
     }
 }
