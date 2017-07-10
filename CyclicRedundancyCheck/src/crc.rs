@@ -2,6 +2,7 @@
 //!
 //! Polynomial division over GF(2) == bitwise add/sub discarding the carry == XOR
 //! See <https://en.wikipedia.org/wiki/Mathematics_of_cyclic_redundancy_checks>.
+#![allow(dead_code)]
 
 // TODO: this will be moved to `std::collections` in Rust 1.2, probably.
 use bit_vec::BitVec;
@@ -45,6 +46,8 @@ const CRC_IEEE: u32 = 0xEDB88320; // MSBit-first
 lazy_static! {
     static ref CRC32_TABLE_MSB: [u32; 256] = make_table_msb(CRC_ISO_13818_1);
     static ref CRC32_TABLE_LSB: [u32; 256] = make_table_lsb(CRC_IEEE);
+
+    static ref REV_BITS_TABLE: [u8; 256] = make_rev_bits_table();
 }
 
 /*
@@ -107,15 +110,50 @@ pub fn make_table_lsb(poly: u32) -> [u32; 256] {
 }
 
 pub fn crc32_lsb(data: &[u8]) -> u32 {
-    let mut res: u32 = 0xFFFF_FFFF;
+    let mut res: u32 = !0;
     for &i in data.iter() {
         res = CRC32_TABLE_LSB[((res as u8) ^ i) as usize] ^ (res >> 8)
     }
     !res
 }
 
-mod test {
+// For testing
+fn make_rev_bits_table() -> [u8; 256] {
+    let mut tbl = [0; 256];
+    for i in 0..256 {
+        let mut j = i;
+        let mut rj = 0;
+        for _ in 0..8 {
+            rj <<= 1;
+            if j & 1 != 0 {
+                rj |= 1;
+            }
+            j >>= 1;
+        }
+        tbl[i] = rj;
+    }
+    tbl
+}
+
+pub fn reverse_bits(data: &mut [u8]) {
+    data.reverse();
+    for b in data.iter_mut() {
+        *b = REV_BITS_TABLE[(*b) as usize];
+    }
+}
+
+// Keeps the order of bytes
+pub fn reverse_bits_in_bytes(data: &mut [u8]) {
+    for b in data.iter_mut() {
+        *b = REV_BITS_TABLE[(*b) as usize];
+    }
+}
+
+mod tests {
     use super::*;
+    use rand::{self, Rng};
+    use std::mem;
+    use std::ptr;
 
     #[test]
     fn test_crc32_bitvec() {
@@ -133,6 +171,21 @@ mod test {
     }
 
     #[test]
+    fn test_reverse_bits() {
+        let mut poly_msb = CRC_ISO_13818_1;
+        unsafe {
+            let mut poly_arr = mem::transmute::<_, [u8; 4]>(poly_msb);
+            reverse_bits(&mut poly_arr);
+            ptr::copy_nonoverlapping(
+                (&poly_arr).as_ptr(),
+                (&mut poly_msb as *mut u32 as *mut u8),
+                4
+            );
+        };
+        assert_eq!(poly_msb, CRC_IEEE);
+    }
+
+    #[test]
     fn test_crc32_table() {
         let data = [
             0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00,
@@ -140,6 +193,29 @@ mod test {
         ];
 
         assert_eq!(crc32_msb(&data), 0x2E701905);
-        assert_eq!(crc32_lsb(b"123456789"), 0xcbf43926);
+        assert_eq!(crc32_lsb(b"123456789"), 0xCBF43926);
+    }
+
+    #[test]
+    fn test_crc32_table_rand() {
+        let mut rng = rand::thread_rng();
+        let mut buffer = [0; 1024];
+        rng.fill_bytes(&mut buffer);
+
+        let mut res_msb = crc32_msb(&buffer);
+        unsafe {
+            let mut res = mem::transmute::<_, [u8; 4]>(res_msb);
+            reverse_bits(&mut res);
+            ptr::copy_nonoverlapping(
+                (&res).as_ptr(),
+                (&mut res_msb as *mut u32 as *mut u8),
+                4
+            );
+        }
+
+        reverse_bits_in_bytes(&mut buffer);
+        let res_lsb = crc32_lsb(&buffer);
+
+        assert_eq!(res_msb, !res_lsb);
     }
 }
