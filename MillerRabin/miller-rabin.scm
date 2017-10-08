@@ -28,24 +28,24 @@
 (define (bool->yes-no b)
   (if b "Yes" "No"))
 
-(define (miller-rabin n primes)
+(define (miller-rabin n bases)
   (define n-1 (- n 1))
   (call-with-values (lambda () (factor-2 n-1))
     (lambda (s d)
       (define (witness n a)
         (define (witness-r x r)
-          (if (>= r s)
-            #f
+          (if (> r s)
+            #t
             (let ((x (mod-exp x 2 n)))
-              (cond ((= x 1) #f)
-                    ((= x n-1) #t)
-                    (else (witness-r x (+ 1 r))))))
+              (cond ((= x 1) #t)
+                    ((= x n-1) #f)
+                    (else (witness-r x (+ 1 r)))))))
 
-          (let ((x (mod-exp a d n)))
-            (if (or (= x 1) (= x n-1))
-                #t
-                (witness-r x 0)))))
-      (andmap (lambda (a) (witness n a)) primes))))
+        (let ((x (mod-exp a d n)))
+          (if (or (= x 1) (= x n-1))
+              #f
+              (witness-r x 2))))
+      (andmap (lambda (a) (not (witness n a))) bases))))
 
 (define (prime? n)
   (cond ((<= n 3) #t) ; n > 1
