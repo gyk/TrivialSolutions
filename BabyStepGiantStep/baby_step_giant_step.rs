@@ -120,6 +120,38 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
     a
 }
 
+// Computes `(a * b) % m`, without overflows.
+// See https://stackoverflow.com/a/19650888/3107204
+fn mul_mod(mut a: u64, mut b: u64, m: u64) -> u64 {
+    let mut res = 0;
+    if b >= m {
+        if m > u64::max_value() >> 1 {
+            b -= m;
+        } else {
+            b %= m;
+        }
+    }
+
+    while a != 0 {
+        if a & 1 != 0 {
+            if b >= m - res {
+                res = res.wrapping_sub(m);
+            }
+            res = res.wrapping_add(b);
+        }
+        a >>= 1;
+
+        // Computes `(b * 2) % m`
+        let mut temp_b = b;
+        if b >= m - b {
+            temp_b = temp_b.wrapping_sub(m);
+        }
+        b = b.wrapping_add(temp_b);
+    }
+
+    res
+}
+
 // (base ^ exp) % mod
 fn exp_mod(mut base: u64, mut exp: u64, m: u64) -> u64 {
     if m == 1 {
@@ -130,9 +162,9 @@ fn exp_mod(mut base: u64, mut exp: u64, m: u64) -> u64 {
     base %= m;
     while exp > 0 {
         if exp & 1 != 0 {
-            res = res * base % m;
+            res = mul_mod(res, base, m);
         }
-        base = (base * base) % m;
+        base = mul_mod(base, base, m);
         exp >>= 1;
     }
     res
