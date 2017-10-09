@@ -1,4 +1,8 @@
-;;; Miller–Rabin Primality Test in Scheme (r5rs)
+;;; Miller–Rabin Primality Test in Scheme (r5rs, chicken)
+
+; Chicken Scheme's "numbers" egg for bignum computation.
+; Prime tests on inexact flonums make no sense.
+(require-extension numbers)
 
 ; n = (2 ^ s) * d
 ; returns `(values s d)`
