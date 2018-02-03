@@ -1,0 +1,3 @@
+[submodule "ApproximatePacking"]
+	path = ApproximatePacking
+	url = https://github.com/gyk/ApproximatePacking
