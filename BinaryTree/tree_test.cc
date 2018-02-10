@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <ctime>
+#include <cctype>
 #include <cassert>
 
 #include <algorithm>
@@ -128,6 +129,28 @@ int main()
     printTreeParentheses(oss2, tree2);
     assert(oss.str() == oss2.str());
     cout << "DONE\n";
+
+    // Test tree inversion (swap left subtree and right subtree)
+    Tree<char> tree_chars;
+    char treeOfChars[] = "Google: invert a binary tree or fuck off";
+    for(auto ch : treeOfChars) {
+        if (isalnum(ch)) tree_chars.insert(ch);
+    }
+
+    cout << '\n';
+
+    cout << "\nBefore inversion:\n";
+    cout << "----\n";
+    printTreeDot(cout, tree_chars);
+    cout << "----\n";
+
+    tree_chars.invert();
+
+    cout << "\nAfter inversion:\n";
+    cout << "----\n";
+    printTreeDot(cout, tree_chars);
+    cout << "----\n";
+
 
     return 0;
 }

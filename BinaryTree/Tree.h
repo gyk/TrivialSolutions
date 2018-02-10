@@ -8,6 +8,7 @@
 #include <queue>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 template <typename T>
 struct TreeNode
@@ -56,6 +57,7 @@ public:
     void inOrder(std::function<void (T& val)> visitor);
     void postOrder(std::function<void (T& val)> visitor);
     void levelOrder(std::function<void (T& val)> visitor);
+    void invert();
 
     friend Tree<T> buildFromTraversals<>
         (std::vector<T>& preOrderSeq, std::vector<T>& inOrderSeq);
@@ -108,7 +110,7 @@ template <typename T>
 void Tree<T>::remove(const T& val)
 {
     TreeNode<T>** pCur = &this->root;
-    for (TreeNode<T>* cur; cur=*pCur; ) {
+    for (TreeNode<T>* cur; (cur=*pCur); ) {
         if (val < cur->value) {
             pCur = &cur->left;
         } else if (val > cur->value) {
@@ -287,5 +289,32 @@ void Tree<T>::levelOrder(std::function<void (T& val)> visitor)
         if (node->right) {
             q.push(node->right);
         }
+    }
+}
+
+template <typename T>
+void Tree<T>::invert()
+{
+    TreeNode<T>* node = this->root;
+    if (!node) {
+        return;
+    }
+
+    std::queue<TreeNode<T>*> q;
+    q.push(node);
+
+    while (!q.empty()) {
+        node = q.front();
+        q.pop();
+
+        if (node->left) {
+            q.push(node->left);
+        }
+
+        if (node->right) {
+            q.push(node->right);
+        }
+
+        std::swap(node->left, node->right);
     }
 }
