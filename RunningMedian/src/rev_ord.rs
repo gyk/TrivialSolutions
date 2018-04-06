@@ -8,7 +8,7 @@ impl<T: Ord> PartialEq for RevOrd<T> {
     }
 }
 
-impl<T: Ord> PartialOrd for RevOrd<T> where T: PartialOrd {
+impl<T: Ord> PartialOrd for RevOrd<T> {
     fn partial_cmp(&self, other:&RevOrd<T>) -> Option<Ordering> {
         (other.0).partial_cmp(&self.0)
     }
