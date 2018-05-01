@@ -1,0 +1,6 @@
+[package]
+name = "odd-even-merge-sort"
+version = "0.1.0"
+
+[dependencies]
+quickcheck = "0.6"
