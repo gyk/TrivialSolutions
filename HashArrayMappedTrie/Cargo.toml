@@ -1,0 +1,5 @@
+[package]
+name = "hash-array-mapped-trie"
+version = "0.1.0"
+
+[dependencies]
