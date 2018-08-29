@@ -17,7 +17,7 @@ const MID: u32 = 1 << 31;
 impl SerialNumber for u32 {
 
     // Serial numbers may be incremented by the addition of a positive integer n, where n is taken
-    // from the range of integers [0 .. (2^(SERIAL_BITS - 1) - 1)].  For a sequence number s, the
+    // from the range of integers [0 .. (2^(SERIAL_BITS - 1) - 1)]. For a sequence number s, the
     // result of such an addition, s', is defined as:
     //
     //     s' = (s + n) modulo (2 ^ SERIAL_BITS)
@@ -45,17 +45,17 @@ impl SerialNumber for u32 {
         if self == rhs {
             Some(Ordering::Equal)
         } else if self < rhs {
-            if self + MID > *rhs {
+            if *rhs - self < MID {
                 Some(Ordering::Less)
-            } else if self + MID < *rhs {
+            } else if *rhs - self > MID {
                 Some(Ordering::Greater)
             } else {
                 None
             }
         } else { // self > rhs
-            if rhs + MID < *self {
+            if *self - rhs > MID {
                 Some(Ordering::Less)
-            } else if rhs + MID > *self {
+            } else if *self - rhs < MID {
                 Some(Ordering::Greater)
             } else {
                 None
@@ -88,6 +88,8 @@ mod tests {
         assert_eq!(2.sn_cmp(&0xFFFF_FFFF), Some(Ordering::Greater));
         assert_eq!(1.sn_cmp(&0x8000_0000), Some(Ordering::Less));
         assert_eq!(0x0000_8000.sn_cmp(&0x0000_8000), Some(Ordering::Equal));
+        assert_eq!(0xFFFF_FFF0.sn_cmp(&0xFFFF_FFFF), Some(Ordering::Less));
+        assert_eq!(0xFFFF_FFFF.sn_cmp(&0xFFFF_FFFE), Some(Ordering::Greater));
         assert_eq!(0x0000_8000.sn_cmp(&0x8000_8000), None);
         assert_eq!(0xFFFF_FFFF.sn_cmp(&0x7FFF_FFFF), None);
 
