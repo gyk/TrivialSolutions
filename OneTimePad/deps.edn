@@ -1,0 +1,2 @@
+{:deps
+ {pandect {:mvn/version "0.6.0"}}}
