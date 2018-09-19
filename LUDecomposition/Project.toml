@@ -1,0 +1,6 @@
+name = "LUDecomposition"
+uuid = "25303002-b96b-11e8-31c8-fd6832bbe545"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
