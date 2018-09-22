@@ -4,9 +4,9 @@ module LUDecomposition
 using LinearAlgebra: dot
 
 function get_n(A::Matrix)::Int
-    sz = size(A)
-    @assert sz[1] == sz[2] "Input matrix is not square"
-    sz[1]
+    (n_r, n_c) = size(A)
+    @assert n_r == n_c "Input matrix is not square"
+    n_r
 end
 
 "Row permutation"
@@ -25,7 +25,7 @@ function lu_decompose!(A::Matrix{<:AbstractFloat})::Union{Permutation, Nothing}
     p = collect(1:n)
     n_pivots = n  # for computing the determinant
 
-    for c in 1:n
+    @inbounds for c in 1:n
         # Using ArrayView here doesn't help.
         # See https://github.com/JuliaLang/julia/issues/19198#issuecomment-257986870.
         (max_value, c_max) = findmax(abs.(A[c:n, c]))
@@ -40,12 +40,11 @@ function lu_decompose!(A::Matrix{<:AbstractFloat})::Union{Permutation, Nothing}
             n_pivots += 1
         end
 
-        for r in (c + 1):n
-            # `A[r, c]` is assigned to 0 by `A[r, c] -= A[c, c] * (A[r, c] / A[c, c])`, so the
-            # element in `L` is `(A[r, c] / A[c, c])`.
-            A[r, c] /= A[c, c]
-            @. @views A[r, (c + 1):n] -= A[c, (c + 1):n] * A[r, c]
-        end
+        # `A[r, c]` is assigned to 0 by `A[r, c] -= A[c, c] * (A[r, c] / A[c, c])`, so the element
+        # in `L` is `(A[r, c] / A[c, c])`.
+        rg = (c + 1):n;
+        @views A[rg, c] /= A[c, c]
+        @. @views A[rg, rg] -= A[rg, c] * A[c, rg]'
     end
 
     Permutation(p, n_pivots)
