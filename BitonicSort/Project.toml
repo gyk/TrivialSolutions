@@ -1,0 +1,6 @@
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+name = "BitonicSort"
+uuid = "adc78f72-c71d-11e8-215c-f3130cdb93ac"
+version = "0.1.0"
+
+[deps]
