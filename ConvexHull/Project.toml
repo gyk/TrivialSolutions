@@ -1,0 +1,6 @@
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+name = "ConvexHull"
+uuid = "d4477482-c7e0-11e8-0e39-6f000753ec77"
+version = "0.1.0"
+
+[deps]
