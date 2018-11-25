@@ -1,0 +1,7 @@
+name = "DancingLinks"
+uuid = "d6b4759a-eaff-11e8-0c35-595317eb5836"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
