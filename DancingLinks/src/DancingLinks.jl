@@ -62,17 +62,13 @@ function cover!(d::DLinks, col::Int)
     d.R[d.L[col]] = d.R[col]
     d.L[d.R[col]] = d.L[col]
 
-    r = d.D[col]
-    while r != col
-        c = d.R[r]
-        while c != r
+    for r in Loop(d.D, col)
+        for c in Loop(d.R, r)
             d.D[d.U[c]] = d.D[c]
             d.U[d.D[c]] = d.U[c]
 
             d.S[d.C[c]] -= 1
-            c = d.R[c]
         end
-        r = d.D[r]
     end
 end
 
@@ -81,17 +77,13 @@ function uncover!(d::DLinks, col::Int)
     d.R[d.L[col]] = col
     d.L[d.R[col]] = col
 
-    r = d.U[col]
-    while r != col
-        c = d.L[r]
-        while c != r
+    for r in Loop(d.U, col)
+        for c in Loop(d.L, r)
             d.D[d.U[c]] = c
             d.U[d.D[c]] = c
 
             d.S[d.C[c]] += 1
-            c = d.L[c]
         end
-        r = d.U[r]
     end
 end
 
@@ -109,13 +101,11 @@ function dlx!(d::DLinks, O::Vector{Int})::Bool
     col = begin
         min_col = nothing
         s_min = typemax(Int)
-        col = d.R[d.h]
-        while col != d.h
+        for col in Loop(d.R, d.h)
             if d.S[col] < s_min
                 s_min = d.S[col]
                 min_col = col
             end
-            col = d.R[col]
         end
         min_col
     end
@@ -123,31 +113,42 @@ function dlx!(d::DLinks, O::Vector{Int})::Bool
     cover!(d, col)
     push!(O, 0)
 
-    r = d.D[col]
-    while r != col
+    for r in Loop(d.D, col)
         O[end] = r
 
-        c = d.R[r]
-        while c != r
+        for c in Loop(d.R, r)
             cover!(d, d.C[c])
-            c = d.R[c]
         end
 
         if dlx!(d, O)
             return true  # only the first
         end
 
-        c = d.L[r]
-        while c != r
+        for c in Loop(d.L, r)
             uncover!(d, d.C[c])
-            c = d.L[c]
         end
-
-        r = d.D[r]
     end
 
     uncover!(d, col)
     false
+end
+
+mutable struct Loop
+    circle::Vector{Int}
+    cur::Int
+    stop::Int
+
+    Loop(circle::Vector{Int}, start::Int) = new(circle, start, start)
+end
+
+function Base.iterate(iter::Loop, _state=iter)
+    next = iter.circle[iter.cur]
+    if next == iter.stop
+        nothing
+    else
+        iter.cur = next
+        (iter.cur, iter)
+    end
 end
 
 include("Sudoku.jl")
