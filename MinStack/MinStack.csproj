@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <DebugType>portable</DebugType>
+    <AssemblyName>MinStack</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>MinStack</PackageId>
+    <RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+</Project>
