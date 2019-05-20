@@ -24,7 +24,12 @@ impl<T: fmt::Debug + PartialEq> fmt::Debug for Polynomial<T> {
 impl<T> Polynomial<T>
     where T: SampleUniform + Bounded + One + PartialEq
 {
-    /// Generates a random monic polynomial, with the given constant term
+    /// Generates a random monic polynomial, with the given constant term.
+    ///
+    /// # Parameters
+    ///
+    /// - `n`: The number of terms of the polynomial. Note that `n` is degree - 1.
+    /// - `constant_term`: The constant term of generated polynomial.
     pub fn random_monic_with_const<R: Rng>(rng: &mut R, n: usize, constant_term: T) -> Self {
         if n < 2 {
             panic!("`n` (degree + 1) must be at least 2");

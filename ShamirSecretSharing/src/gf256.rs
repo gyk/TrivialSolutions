@@ -24,7 +24,7 @@ use num::{Zero, One};
 use num::Bounded;
 use num_traits::Inv;
 use rand::prelude::*;
-use rand::distributions::uniform::{SampleUniform, UniformSampler, UniformInt};
+use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler, UniformInt};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Gf256Elm(u8);
@@ -201,12 +201,20 @@ pub struct UniformGf256 {
 
 impl UniformSampler for UniformGf256 {
     type X = Gf256Elm;
-    fn new(low: Self::X, high: Self::X) -> Self {
+    fn new<B1, B2>(low: B1, high: B2) -> Self
+        where
+            B1: SampleBorrow<Self::X> + Sized,
+            B2: SampleBorrow<Self::X> + Sized,
+    {
         UniformGf256 {
-            inner: UniformInt::<u8>::new(low.0, high.0),
+            inner: UniformInt::<u8>::new(low.borrow().0, high.borrow().0),
         }
     }
-    fn new_inclusive(low: Self::X, high: Self::X) -> Self {
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+        where
+            B1: SampleBorrow<Self::X> + Sized,
+            B2: SampleBorrow<Self::X> + Sized,
+    {
         UniformSampler::new(low, high)
     }
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
