@@ -114,3 +114,34 @@ module MinimumSpanningTree
                 uf.Union u v
                 tmpTree.Add(((u, v), wt))
         edgeListToParentLinks tmpTree n
+
+    type private Dict = System.Collections.Generic.Dictionary<int, (int * int) * float>
+    let mstBoruvka (g: IGraph) : MstResult =
+        let n = g.NumVertices
+        let mutable edges = seq <| g.ExtractEdges ()
+
+        let setNN (nearest: Dict) (sId: int) (uv: (int * int)) (wt: float) =
+            match nearest.TryGetValue(sId) with
+            | (true, (_, nnWt)) when nnWt <= wt -> ()
+            | _ -> nearest.[sId] <- (uv, wt)
+
+        let uf = UnionFind(n)
+        let tmpTree: ResizeArray<(int * int) * float> = ResizeArray []
+        while not <| Seq.isEmpty edges do
+            let nearest = Dict()
+            let remainingEdges = ResizeArray<(int * int) * float>()
+            for ((u, v) as uv, wt) in edges do
+                let u' = uf.Find u
+                let v' = uf.Find v
+                if u' <> v' then
+                    remainingEdges.Add((uv, wt))
+                    setNN nearest u' uv wt
+                    setNN nearest v' uv wt
+            edges <- remainingEdges
+
+            for KeyValue(_, ((u, v), wt)) in nearest do
+                if not <| uf.IsConnected u v then  // prevents duplicated edges
+                    tmpTree.Add(((u, v), wt))
+                    uf.Union u v
+
+        edgeListToParentLinks tmpTree n
