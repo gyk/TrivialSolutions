@@ -97,3 +97,40 @@ module ShortestPaths
                             let p' = fst << Option.get <| p.[s, i]  // (!) not `i`
                             p.[s, t] <- Some (p', d')
         p
+
+    open System.Collections.Generic
+    [<Literal>]
+    let SENTINEL = -1
+
+    /// Bellman-Ford algorithm, which supports negative weights.
+    ///
+    /// Precondition: Graph `g` has no negative cycles.
+    let BellmanFord (g: GraphList) (source: int) : ShortestPaths =
+        let n = (g :> IGraph).NumVertices
+        let spTree = Array.init n (fun _ -> None)
+        let dist = Array.init n (fun _ -> infinity)
+        let mutable nPasses = 0
+        let q = Queue<int>()
+        q.Enqueue(source)
+        q.Enqueue(SENTINEL)
+        spTree.[source] <- Some (source, 0.0)
+        dist.[source] <- 0.0
+
+        let mutable running = true
+        while running && q.Count > 0 do
+            let u = q.Dequeue()
+            if u = SENTINEL then
+                nPasses <- nPasses + 1
+                if nPasses > n then  // running n times
+                    running <- false
+                else
+                    q.Enqueue(SENTINEL)
+            else
+                // Always have `dist.[u] < infinity`
+                for (v, wt) in g.AdjList.[u] do
+                    let d = dist.[u] + wt
+                    if d < dist.[v] then  // relaxation
+                        dist.[v] <- d
+                        spTree.[v] <- Some (u, d)
+                        q.Enqueue(v)
+        spTree

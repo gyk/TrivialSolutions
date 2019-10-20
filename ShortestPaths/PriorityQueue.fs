@@ -60,8 +60,9 @@ type PriorityQueue(capacity: int) =
         data.Add(x)
         let dataIndex = data.Count - 1
         indices.Add(dataIndex)
-        invIndices.Add(Some <| indices.Count - 1)
-        fixUp <| getN ()
+        let n = getN ()
+        invIndices.Add(Some n)
+        fixUp n
         dataIndex
 
     member this.PeekMin () : (int * float) =
