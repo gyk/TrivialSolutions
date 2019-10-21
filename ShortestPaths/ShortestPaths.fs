@@ -99,38 +99,52 @@ module ShortestPaths
         p
 
     open System.Collections.Generic
-    [<Literal>]
-    let SENTINEL = -1
 
     /// Bellman-Ford algorithm, which supports negative weights.
     ///
-    /// Precondition: Graph `g` has no negative cycles.
-    let BellmanFord (g: GraphList) (source: int) : ShortestPaths =
+    /// Returns `(shortest-paths, false)` if graph `g` has no negative cycles. Otherwise, returns
+    /// `(paths, true)`, where `paths` is the paths after n-th relaxations.
+    let BellmanFordCycleDetection (g: GraphList) (source: int) : ShortestPaths * bool =
         let n = (g :> IGraph).NumVertices
         let spTree = Array.init n (fun _ -> None)
         let dist = Array.init n (fun _ -> infinity)
         let mutable nPasses = 0
-        let q = Queue<int>()
-        q.Enqueue(source)
-        q.Enqueue(SENTINEL)
+        let mutable qDe = Queue<int>()
+        let mutable qEn = Queue<int>()
+        qDe.Enqueue(source)
         spTree.[source] <- Some (source, 0.0)
         dist.[source] <- 0.0
 
+        let mutable hasNegativeCycle = false
+
         let mutable running = true
-        while running && q.Count > 0 do
-            let u = q.Dequeue()
-            if u = SENTINEL then
-                nPasses <- nPasses + 1
-                if nPasses > n then  // running n times
+        while running do
+            if qDe.Count = 0 then
+                if qEn.Count = 0 then
                     running <- false
                 else
-                    q.Enqueue(SENTINEL)
+                    let q = qDe
+                    qDe <- qEn
+                    qEn <- q
+
+                    nPasses <- nPasses + 1
+                    if nPasses > n then  // running n times
+                        hasNegativeCycle <- true
+                        running <- false
             else
+                let u = qDe.Dequeue()
+
                 // Always have `dist.[u] < infinity`
                 for (v, wt) in g.AdjList.[u] do
                     let d = dist.[u] + wt
                     if d < dist.[v] then  // relaxation
                         dist.[v] <- d
                         spTree.[v] <- Some (u, d)
-                        q.Enqueue(v)
-        spTree
+                        qEn.Enqueue(v)
+        (spTree, hasNegativeCycle)
+
+    /// Bellman-Ford algorithm
+    ///
+    /// Precondition: Graph `g` has no negative cycles.
+    let BellmanFord (g: GraphList) (source: int) : ShortestPaths =
+        BellmanFordCycleDetection g source |> fst

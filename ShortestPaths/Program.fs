@@ -62,6 +62,12 @@ let testShortestPathsNegative (testId: int) (gData: GraphData) : bool =
 
     checkShortestPaths bellmanFordAPSP floydAPSP
 
+let hasNegativeCycles (testId: int) (gData: GraphData) : bool =
+    printfn "Graph %d negative cycle detection" testId
+    let gList = gData.ToGraphList()
+    let n = (gList :> IGraph).NumVertices
+    Seq.exists (BellmanFordCycleDetection gList >> snd) (seq { for i in 0 .. (n - 1) -> i })
+
 [<EntryPoint>]
 let main argv =
     // Trivial
@@ -145,5 +151,23 @@ let main argv =
 
         if not testRes then
             failwith <| sprintf "Graph %d inconsistent results\n" i
+
+    // Graph with negative cycles. From GeeksforGeeks.
+    let g5Data = {
+        nVertices = 4;
+        edges =
+        [
+            ((0, 1), 1.);
+            ((1, 2), -1.);
+            ((2, 3), -1.);
+            ((3, 0), -1.);
+        ]
+    }
+
+    if (
+        not <| hasNegativeCycles 4 g4Data &&
+        hasNegativeCycles 5 g5Data
+    ) |> not then
+        failwith "Negative cycle detection failed"
 
     0 // return an integer exit code
