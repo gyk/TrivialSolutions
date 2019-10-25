@@ -1,5 +1,3 @@
-use std::cmp;
-
 fn merge_interval(mut interval: Vec<(usize, usize)>) -> Vec<(usize, usize)> {
     interval.sort();
     let mut result = Vec::new();
@@ -8,7 +6,9 @@ fn merge_interval(mut interval: Vec<(usize, usize)>) -> Vec<(usize, usize)> {
             let (beg, end) = i;
             let (l_beg, l_end) = *last;
             if beg <= l_end {
-                *last = (cmp::min(beg, l_beg), cmp::max(end, l_end));
+                if end > l_end {
+                    *last = (l_beg, end);
+                }
                 continue;
             }
         }
