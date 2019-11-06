@@ -1,0 +1,7 @@
+name = "FastFourierTransform"
+uuid = "b8fd2f76-6b9d-481a-87b6-c0512fa42a80"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
