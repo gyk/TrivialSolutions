@@ -326,15 +326,15 @@ function poly_mul(
     nb = length(b)
     # da = na - 1, db = nb - 1; d = da + db = na + nb - 2, n = d + 1 = na + nb - 1
     n = na + nb - 1
-    n = nextpow(2, n)
-    a = vcat(complex(a), zeros(Complex{T}, n - na))
-    b = vcat(complex(b), zeros(Complex{T}, n - nb))
+    np = nextpow(2, n)
+    a = vcat(complex(a), zeros(Complex{T}, np - na))
+    b = vcat(complex(b), zeros(Complex{T}, np - nb))
 
     # By Convolution theorem ([clrs] Theorem 30.8)
     fa = fft_f(a)
     fb = fft_f(b)
     fp = fa .* fb
-    real(ifft_f(fp))
+    real(ifft_f(fp)[1:n])
 end
 
 end # module
