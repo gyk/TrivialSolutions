@@ -22,5 +22,14 @@ using FastFourierTransform
         @test t_naive ≈ t
         @test t_recursive ≈ t
         @test t_iterative ≈ t
+
+        # Polynomial multiplication
+        p1 = rand(n)
+        p2 = rand(n)
+        x = rand(n)
+        prod = @. eval_poly($Ref(p1), x) * eval_poly($Ref(p2), x)
+        p = poly_mul(p1, p2)
+        prod_fft = eval_poly.(Ref(p), x)
+        @test prod ≈ prod_fft
     end
 end

@@ -18,7 +18,8 @@ export
     dft, idft,
     fft_recursive_naive, ifft_recursive_naive,
     fft_recursive, ifft_recursive,
-    fft_iterative, ifft_iterative
+    fft_iterative, ifft_iterative,
+    eval_poly, poly_mul
 
 #=
 
@@ -304,6 +305,36 @@ function fft_iterative_impl(
         end
     end
     parent(a)
+end
+
+#===== Polynomial multiplication =====#
+
+"""
+Evaluates polynomial `p(x)` using Horner's rule, where `p` is the coefficient list for `x` from
+`x^0` to `x^{n - 1}`.
+"""
+function eval_poly(p::Vector{T}, x::T)::T where T<:Real
+    foldr((a::T, s::T) -> s * x + a, p)
+end
+
+function poly_mul(
+    a::Vector{T}, b::Vector{T},
+    fft_f::Function=fft_iterative, ifft_f::Function=ifft_iterative,
+)::Vector{T} where T<:Real
+    # zero-padding
+    na = length(a)
+    nb = length(b)
+    # da = na - 1, db = nb - 1; d = da + db = na + nb - 2, n = d + 1 = na + nb - 1
+    n = na + nb - 1
+    n = nextpow(2, n)
+    a = vcat(complex(a), zeros(Complex{T}, n - na))
+    b = vcat(complex(b), zeros(Complex{T}, n - nb))
+
+    # By Convolution theorem ([clrs] Theorem 30.8)
+    fa = fft_f(a)
+    fb = fft_f(b)
+    fp = fa .* fb
+    real(ifft_f(fp))
 end
 
 end # module
