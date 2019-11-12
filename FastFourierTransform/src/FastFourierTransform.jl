@@ -16,7 +16,9 @@ using OffsetArrays
 export
     Direction, Forward, Backward,
     dft, idft,
-    fft_recursive_naive, ifft_recursive_naive, fft_recursive, ifft_recursive
+    fft_recursive_naive, ifft_recursive_naive,
+    fft_recursive, ifft_recursive,
+    fft_iterative, ifft_iterative
 
 #=
 
@@ -102,6 +104,26 @@ function divide_vec(
     (x_e, x_o) .|> zero_based
 end
 
+function bit_reverse(x::Int, bit_len::Int)::Int
+    y = 0
+    for i in 1:bit_len
+        y <<= 1
+        y |= x & 1
+        x >>= 1
+    end
+    y
+end
+
+function bit_reverse_copy(a::OffsetVector{T})::OffsetVector{T} where T
+    n = length_checked(a)
+    bit_len = trailing_zeros(n)
+    b = zero(a)
+    for i in 0:(n - 1)
+        b[bit_reverse(i, bit_len)] = a[i]
+    end
+    b
+end
+
 @enum Direction Forward Backward
 
 function dft_matrix(T::Type, n::Int, dir::Direction)::OffsetArray{Complex{T}}
@@ -123,20 +145,23 @@ function dft_matrix(T::Type, n::Int, dir::Direction)::OffsetArray{Complex{T}}
     W
 end
 
-function dft_vector(T::Type, n::Int, dir::Direction)::OffsetArray{Complex{T}}
+function dft_vector(T::Type, n::Int, dir::Direction)::OffsetVector{Complex{T}}
     # Sets `w_i = exp(-im * 2π * i/n)` (forward).
-    w = if dir == Forward
-        [exp((-2 * T(π))im * i / n) for i in 0:(n ÷ 2 - 1)]
-    else
-        # (!) Do not put `/ n` here as unlike `W`, `V[:, 0]` is not 0
-        [exp((2 * T(π))im * i / n) for i in 0:(n ÷ 2 - 1)]
-    end
+    #
+    # Type annotation is required for `n == 1`.
+    w::Vector{Complex{T}} =
+        if dir == Forward
+            [exp((-2 * T(π))im * i / n) for i in 0:(n ÷ 2 - 1)]
+        else
+            # (!) Do not put `/ n` here as unlike `W`, `V[:, 0]` is not 0
+            [exp((2 * T(π))im * i / n) for i in 0:(n ÷ 2 - 1)]
+        end
     OffsetVector(w, 0:(n ÷ 2 - 1))
 end
 
 function length_checked(a::AbstractVector)::Int
     n = length(a)
-    @assert nextpow(2, n) == n "Coefficient length is not a power of 2"
+    @assert ispow2(n) "Coefficient length is not a power of 2"
     n
 end
 
@@ -239,6 +264,46 @@ function fft_recursive_r(
     ]
 end
 
-# TODO: Iterative versions.
+#===== FFT (the iterative version) =====#
+
+function fft_iterative(a::Vector{Complex{T}})::Vector{Complex{T}} where T<:AbstractFloat
+    fft_iterative_impl(a, Forward)
+end
+
+function ifft_iterative(a::Vector{Complex{T}})::Vector{Complex{T}} where T<:AbstractFloat
+    n = length_checked(a)
+    fft_iterative_impl(a, Backward) / n
+end
+
+function fft_iterative_impl(
+    a::Vector{Complex{T}},
+    dir::Direction,
+)::Vector{Complex{T}} where T<:AbstractFloat
+    n = length_checked(a)
+    log2n = trailing_zeros(n)
+
+    a = zero_based(a)
+    a = bit_reverse_copy(a)
+    w = dft_vector(T, n, dir)
+
+    # The `m` here is actually `1/2 m` in [clrs].
+    for s in 1:log2n
+        m = 2 ^ (s - 1)
+        k = 0
+        while k < n
+            # butterfly operation
+            for i = 0:(m - 1)
+                # Indexes `w_{2 ^ s}^i` into vector `w_n`, so its step is `2 ^ (log2n - s)`.
+                t = w[(2 ^ (log2n - s)) * i] * a[k + i + m]
+                u = a[k + i]
+                a[k + i] = u + t
+                a[k + i + m] = u - t
+            end
+
+            k += m * 2
+        end
+    end
+    parent(a)
+end
 
 end # module
