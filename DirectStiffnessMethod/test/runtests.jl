@@ -59,3 +59,109 @@ end
     @test round.(f / 1000.0, sigdigits=3) ==
         [0.0, -1.87, 0.0, 0.0, 0.0, 0.0, -5.0, 1.87, 750.0]
 end
+
+@testset "Truss v.s. Frame" begin
+    nodes = [
+        Node(1, 0.0, 0.0, FixedJoint)
+        Node(2, 0.0, 1.0, FreeJoint)
+        Node(3, 1.0, 1.0, FreeJoint)
+        Node(4, 1.0, 0.0, FixedJoint)
+    ]
+
+    # Steel pipe, length = 1m, external diameter = 2cm, internal diameter = 1cm
+    ro = 0.01
+    ri = 0.005
+    E = 200.0e9
+    A = pi * (ro ^ 2 - ri ^ 2)
+    I = pi / 4 * (ro ^ 4 - ri ^ 4)
+
+    members = [
+        Member(1, 2, 1, PinnedConnection, PinnedConnection, E, A, I)
+        Member(2, 2, 3, PinnedConnection, PinnedConnection, E, A, I)
+        Member(3, 3, 4, PinnedConnection, PinnedConnection, E, A, I)
+        Member(4, 1, 4, PinnedConnection, PinnedConnection, E, A, I)
+        Member(5, 2, 4, PinnedConnection, PinnedConnection, E, A, I)
+        Member(6, 3, 1, PinnedConnection, PinnedConnection, E, A, I)
+    ]
+
+    s = Structure(nodes, members)
+
+    loads = sparsevec(node_indices(2), [10.0, 10.0, 0.0], 3 * num_nodes(s))
+    (d, f) = solve(s, loads)
+
+    # Manually calculates the internal axial forces
+    SQRT2INV = 1.0 / sqrt(2.0)
+    iaf = E * A * [
+        d[5], d[7] - d[4], d[8], 0.0,
+        (-d[4] * SQRT2INV + d[5] * SQRT2INV) * SQRT2INV,
+        (d[7] * SQRT2INV + d[8] * SQRT2INV) * SQRT2INV,
+    ]
+
+    @test round.(iaf, sigdigits=3) == [14.4, -5.58, -5.58, 0.0, -6.25, 7.89]
+
+    # Uses fixed connections to construct a frame.
+    members_frame = [
+        Member(1, 2, 1, FixedConnection, FixedConnection, E, A, I)
+        Member(2, 2, 3, FixedConnection, FixedConnection, E, A, I)
+        Member(3, 3, 4, FixedConnection, FixedConnection, E, A, I)
+        Member(4, 1, 4, FixedConnection, FixedConnection, E, A, I)
+        Member(5, 2, 4, FixedConnection, FixedConnection, E, A, I)
+        Member(6, 3, 1, FixedConnection, FixedConnection, E, A, I)
+    ]
+
+    s_frame = Structure(nodes, members_frame)
+
+    (d_frame, f_frame) = solve(s_frame, loads)
+
+    iaf_frame = begin
+        d = d_frame
+        E * A * [
+            d[5], d[7] - d[4], d[8], 0.0,
+            (-d[4] * SQRT2INV + d[5] * SQRT2INV) * SQRT2INV,
+            (d[7] * SQRT2INV + d[8] * SQRT2INV) * SQRT2INV,
+        ]
+    end
+
+    # This shows the relative error when modeling a frame as truss is ignorable in real life.
+    rel_err = abs.((iaf - iaf_frame) ./ (iaf_frame .+ eps()))
+    @test all(rel_err .< 0.01)
+    # (Actually, the maximum relative error is about 0.001 in this setting.)
+end
+
+@testset "Portal frame" begin
+    offset = 0.25
+    nodes = [
+        Node(1, 0.0, 0.0, FixedJoint)
+        Node(2, 0.0, 1.0, FreeJoint)
+        Node(3, 0.5 - offset, 1.0, FreeJoint)
+        Node(4, 1.0, 1.0, FreeJoint)
+        Node(5, 1.0, 0.0, FixedJoint)
+    ]
+
+    # Steel pipe, length = 1m, external diameter = 2cm, internal diameter = 1cm
+    ro = 0.01
+    ri = 0.005
+    E = 200.0e9
+    A = pi * (ro ^ 2 - ri ^ 2)  # doesn't matter for frame (matters for truss)
+    I = pi / 4 * (ro ^ 4 - ri ^ 4)
+
+    members = [
+        Member(1, 1, 2, FixedConnection, FixedConnection, E, A, I)
+        Member(2, 2, 3, FixedConnection, FixedConnection, E, A, I)
+        Member(3, 3, 4, FixedConnection, FixedConnection, E, A, I)
+        Member(4, 4, 5, FixedConnection, FixedConnection, E, A, I)
+    ]
+
+    s = Structure(nodes, members)
+
+    loads = sparsevec(node_indices(3), [0.0, -1.0, 0.0], 3 * num_nodes(s))
+    (d, f) = solve(s, loads)
+
+    d_x = d[1:3:end]
+    # When putting a point load on the left half of the horizontal beam, counterintuitively, the
+    # frame leans to the left instead of right.
+    #
+    # Adjust the relative values of E/I and the frame may have negative-X deformation. And in the
+    # case of large deformation/flexible beams, the common intuition is right too.
+    @test all(d_x .>= 0.0)
+end
