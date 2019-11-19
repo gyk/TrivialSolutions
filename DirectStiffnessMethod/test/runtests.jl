@@ -129,13 +129,14 @@ end
 end
 
 @testset "Portal frame" begin
-    offset = 0.25
+    offset = 0.5
+    # Span = 2m, height = 1m
     nodes = [
         Node(1, 0.0, 0.0, FixedJoint)
         Node(2, 0.0, 1.0, FreeJoint)
-        Node(3, 0.5 - offset, 1.0, FreeJoint)
-        Node(4, 1.0, 1.0, FreeJoint)
-        Node(5, 1.0, 0.0, FixedJoint)
+        Node(3, 1.0 - offset, 1.0, FreeJoint)
+        Node(4, 2.0, 1.0, FreeJoint)
+        Node(5, 2.0, 0.0, FixedJoint)
     ]
 
     # Steel pipe, length = 1m, external diameter = 2cm, internal diameter = 1cm
@@ -154,7 +155,7 @@ end
 
     s = Structure(nodes, members)
 
-    loads = sparsevec(node_indices(3), [0.0, -1.0, 0.0], 3 * num_nodes(s))
+    loads = sparsevec(node_indices(3), [0.0, -100.0, 0.0], 3 * num_nodes(s))
     (d, f) = solve(s, loads)
 
     d_x = d[1:3:end]
@@ -164,4 +165,38 @@ end
     # Adjust the relative values of E/I and the frame may have negative-X deformation. And in the
     # case of large deformation/flexible beams, the common intuition is right too.
     @test all(d_x .>= 0.0)
+
+    #================
+
+    "Offset of the point load" v.s. "The displacement of the horizontal beam":
+
+    The offset ∈ [0.0, 1.0), and `d = (d[4] + d[10]) / 2` is the average horizontal displacement of
+    the beam. It can be seen from the table below that the horizontal displacement reaches its
+    maximum when the load placed at approximately 0.6m from the axis of symmetry.
+
+
+        | offset | d * 1e4 |
+        |--------|---------|
+        |  0.0   |  0.0    |
+        |  0.05  |  1.058  |
+        |  0.1   |  2.1    |
+        |  0.15  |  3.111  |
+        |  0.2   |  4.073  |
+        |  0.25  |  4.972  |
+        |  0.3   |  5.792  |
+        |  0.35  |  6.516  |
+        |  0.4   |  7.128  |
+        |  0.45  |  7.614  |
+        |  0.5   |  7.956  |
+        |  0.55  |  8.138  |
+        |  0.6   |  8.146  |
+        |  0.65  |  7.963  |
+        |  0.7   |  7.573  |
+        |  0.75  |  6.96   |
+        |  0.8   |  6.108  |
+        |  0.85  |  5.002  |
+        |  0.9   |  3.625  |
+        |  0.95  |  1.962  |
+
+    ================#
 end
