@@ -1,0 +1,9 @@
+name = "RingSignature"
+uuid = "a4e9f1b2-5eb5-413c-8082-6fe22560edda"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Primes = "27ebfcd6-29c5-5fa9-bf4b-fb8fc14df3ae"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
