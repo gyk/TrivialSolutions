@@ -15,7 +15,7 @@ include("field.jl")
 
 export
     Point, EllipticCurve, is_on_curve,
-    ec_zero, ec_add, ec_neg, ec_scalar_mul
+    ec_zero, ec_add, ec_neg, ec_scalar_mul, ec_scalar_mul_ml
 
 struct Point{T}
     x::T
@@ -117,6 +117,32 @@ function ec_scalar_mul(ec::EllipticCurve{T}, p::Point{T}, s::Int)::Point{T} wher
         s >>= 1
     end
     acc
+end
+
+# Side-channel attack resistent multiplication.
+"Point multiplication using Montgomery ladder."
+function ec_scalar_mul_ml(ec::EllipticCurve{T}, p::Point{T}, s::Int)::Point{T} where T
+    # p * d = \sum_{i = 0..m} p * (d_i 2^i)          ...0-based
+    #       = \sum_{i = 1..m} p * (d_i 2^(i - 1))    ...1-based
+    d = digits(s, base=2)
+    m = length(d)
+
+    # Invariants:
+    #
+    #     r0 = p * t0 = p * (s >> (i - 1))
+    #     r1 = p * t1 = p * (t0 + 1)
+    r0 = ec_zero(ec)
+    r1 = p
+    for i in m:-1:1
+        if d[i] == 0
+            r1 = ec_add(ec, r0, r1)  # t0 + (t0 + 1) => (2 * t0) + 1
+            r0 = ec_add(ec, r0, r0)  # 2 * t0
+        else
+            r0 = ec_add(ec, r0, r1)  # t0 + (t0 + 1) => 2 * t0 + 1
+            r1 = ec_add(ec, r1, r1)  # 2 * (t0 + 1) => (2 * t0 + 1) + 1
+        end
+    end
+    r0
 end
 
 end # module

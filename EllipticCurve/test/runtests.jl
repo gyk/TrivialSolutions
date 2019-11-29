@@ -100,6 +100,7 @@ end
         for i in 1:n
             acc = ec_add(ec, acc, p)
         end
-        @test acc ≈ ec_scalar_mul(ec, p, n)
+        @test acc == ec_scalar_mul(ec, p, n)
+        @test acc == ec_scalar_mul_ml(ec, p, n)
     end
 end
