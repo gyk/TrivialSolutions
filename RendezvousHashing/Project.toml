@@ -1,0 +1,4 @@
+name = "RendezvousHashing"
+uuid = "a2dc85f4-fc5f-4a88-a58b-af42aa20c7f1"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
