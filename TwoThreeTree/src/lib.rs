@@ -6,11 +6,10 @@ use std::cmp::Ordering;
 use std::io::Write;
 
 // TODO: Get rid of boilerplate code.
-// TODO: Maybe add an enum variant `Leaf` rather than using `Option`?
 // TODO: Support key-value
 // TODO: Deletion
 
-type Link<T> = Option<Box<Node<T>>>;
+type Link<T> = Box<Node<T>>;
 
 // Trait bounds on struct? c.f. https://github.com/rust-lang/rust-clippy/issues/1689
 pub struct TwoThreeTree<T: Ord> {
@@ -18,6 +17,7 @@ pub struct TwoThreeTree<T: Ord> {
 }
 
 pub enum Node<T: Ord> {
+    Leaf,
     Two {
         value: T,
         left: Link<T>,
@@ -39,11 +39,15 @@ enum InsRes<T: Ord> {
 }
 
 impl<T: Ord> Node<T> {
+    pub fn leaf_boxed() -> Box<Self> {
+        Box::new(Node::Leaf)
+    }
+
     pub fn new2_boxed(value: T) -> Box<Self> {
         Box::new(Node::Two {
             value,
-            left: None,
-            right: None,
+            left: Node::leaf_boxed(),
+            right: Node::leaf_boxed(),
         })
     }
 
@@ -51,21 +55,28 @@ impl<T: Ord> Node<T> {
         Box::new(Node::Three {
             l_value,
             r_value,
-            left: None,
-            middle: None,
-            right: None,
+            left: Node::leaf_boxed(),
+            middle: Node::leaf_boxed(),
+            right: Node::leaf_boxed(),
         })
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        match *self {
+            Node::Leaf => true,
+            _ => false,
+        }
     }
 }
 
 // ===== Functions on `Link` =====
 fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
-    match node.as_ref().map(AsRef::as_ref) {
-        None => {
-            return InsRes::Consumed(Node::new2_boxed(x));
+    match *node {
+        Node::Leaf => {
+            InsRes::Consumed(Node::new2_boxed(x))
         }
-        Some(Node::Two { left: None, right: None, .. }) => {
-            let node = if let Node::Two { value, .. } = *node.unwrap() {
+        Node::Two { ref left, ref right, .. } if left.is_leaf() && right.is_leaf() => {
+            let node = if let Node::Two { value, .. } = *node {
                 match x.cmp(&value) {
                     Ordering::Equal => Node::new2_boxed(value),
                     Ordering::Less => Node::new3_boxed(x, value),
@@ -74,10 +85,10 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
             } else {
                 unreachable!();
             };
-            return InsRes::Consumed(node);
+            InsRes::Consumed(node)
         }
-        Some(Node::Two { .. }) => {
-            if let Node::Two { value, left, right } = *node.unwrap() {
+        Node::Two { .. } => {
+            if let Node::Two { value, left, right } = *node {
                 match x.cmp(&value) {
                     Ordering::Equal => {
                         InsRes::Consumed(Box::new(
@@ -94,7 +105,7 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                                 InsRes::Consumed(Box::new(
                                     Node::Two {
                                         value,
-                                        left: Some(left),
+                                        left,
                                         right,
                                     }
                                 ))
@@ -106,7 +117,7 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                                         r_value: value,
                                         left: new_left,
                                         middle: new_right,
-                                        right: right,
+                                        right,
                                     }
                                 ))
                             }
@@ -119,7 +130,7 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                                     Node::Two {
                                         value,
                                         left,
-                                        right: Some(right),
+                                        right,
                                     }
                                 ))
                             }
@@ -128,7 +139,7 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                                     Node::Three {
                                         l_value: value,
                                         r_value: new_value,
-                                        left: left,
+                                        left,
                                         middle: new_left,
                                         right: new_right,
                                     }
@@ -141,8 +152,10 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                 unreachable!();
             }
         }
-        Some(Node::Three { left: None, middle: None, right: None, .. }) => {
-            if let Node::Three { l_value, r_value, left, middle, right } = *node.unwrap() {
+        Node::Three { ref left, ref middle, ref right, .. }
+            if left.is_leaf() && middle.is_leaf() && right.is_leaf() =>
+        {
+            if let Node::Three { l_value, r_value, left, middle, right } = *node {
                 if x == l_value || x == r_value {
                     InsRes::Consumed(Box::new(
                         Node::Three {
@@ -163,18 +176,18 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                     };
                     InsRes::Pushed(
                         m,
-                        Some(Node::new2_boxed(l)),
-                        Some(Node::new2_boxed(r)),
+                        Node::new2_boxed(l),
+                        Node::new2_boxed(r),
                     )
                 }
             } else {
                 unreachable!();
             }
         }
-        Some(Node::Three { .. }) => {
-            if let Node::Three { l_value, r_value, left, middle, right } = *node.unwrap() {
+        Node::Three { .. } => {
+            if let Node::Three { l_value, r_value, left, middle, right } = *node {
                 if x == l_value || x == r_value {
-                    return InsRes::Consumed(Box::new(
+                    InsRes::Consumed(Box::new(
                         Node::Three {
                             l_value,
                             r_value,
@@ -182,92 +195,92 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
                             middle,
                             right,
                         }
-                    ));
+                    ))
                 } else if x < l_value {
                     match insert_r(left, x) {
                         InsRes::Consumed(left) => {
-                            return InsRes::Consumed(Box::new(
+                            InsRes::Consumed(Box::new(
                                 Node::Three {
                                     l_value,
                                     r_value,
-                                    left: Some(left),
+                                    left,
                                     middle,
                                     right,
                                 }
-                            ));
+                            ))
                         }
                         InsRes::Pushed(new_value, new_left, new_right) => {
-                            return InsRes::Pushed(
+                            InsRes::Pushed(
                                 l_value,
-                                Some(Box::new(Node::Two {
+                                Box::new(Node::Two {
                                     value: new_value,
                                     left: new_left,
                                     right: new_right,
-                                })),
-                                Some(Box::new(Node::Two {
+                                }),
+                                Box::new(Node::Two {
                                     value: r_value,
                                     left: middle,
-                                    right: right,
-                                }))
-                            );
+                                    right,
+                                }),
+                            )
                         }
                     }
                 } else if x < r_value {
                     match insert_r(middle, x) {
                         InsRes::Consumed(middle) => {
-                            return InsRes::Consumed(Box::new(
-                                Node::Three {
-                                    l_value,
-                                    r_value,
-                                    left,
-                                    middle: Some(middle),
-                                    right,
-                                }
-                            ));
-                        }
-                        InsRes::Pushed(new_value, new_left, new_right) => {
-                            return InsRes::Pushed(
-                                new_value,
-                                Some(Box::new(Node::Two {
-                                    value: l_value,
-                                    left: left,
-                                    right: new_left,
-                                })),
-                                Some(Box::new(Node::Two {
-                                    value: r_value,
-                                    left: new_right,
-                                    right: right,
-                                }))
-                            );
-                        }
-                    }
-                } else {
-                    match insert_r(right, x) {
-                        InsRes::Consumed(right) => {
-                            return InsRes::Consumed(Box::new(
+                            InsRes::Consumed(Box::new(
                                 Node::Three {
                                     l_value,
                                     r_value,
                                     left,
                                     middle,
-                                    right: Some(right),
+                                    right,
                                 }
-                            ));
+                            ))
                         }
                         InsRes::Pushed(new_value, new_left, new_right) => {
-                            return InsRes::Pushed(
-                                r_value,
-                                Some(Box::new(Node::Two {
+                            InsRes::Pushed(
+                                new_value,
+                                Box::new(Node::Two {
                                     value: l_value,
-                                    left: left,
+                                    left,
+                                    right: new_left,
+                                }),
+                                Box::new(Node::Two {
+                                    value: r_value,
+                                    left: new_right,
+                                    right,
+                                }),
+                            )
+                        }
+                    }
+                } else {
+                    match insert_r(right, x) {
+                        InsRes::Consumed(right) => {
+                            InsRes::Consumed(Box::new(
+                                Node::Three {
+                                    l_value,
+                                    r_value,
+                                    left,
+                                    middle,
+                                    right,
+                                }
+                            ))
+                        }
+                        InsRes::Pushed(new_value, new_left, new_right) => {
+                            InsRes::Pushed(
+                                r_value,
+                                Box::new(Node::Two {
+                                    value: l_value,
+                                    left,
                                     right: middle,
-                                })),
-                                Some(Box::new(Node::Two {
+                                }),
+                                Box::new(Node::Two {
                                     value: new_value,
                                     left: new_left,
                                     right: new_right,
-                                }))
-                            );
+                                }),
+                            )
                         }
                     }
                 }
@@ -278,10 +291,10 @@ fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
     }
 }
 
-fn height_r<T: Ord>(node: &Link<T>) -> usize {
-    match node.as_ref().map(AsRef::as_ref) {
-        None => 0,
-        Some(Node::Two { ref left, ref right, .. }) => {
+fn height_r<T: Ord>(node: &Node<T>) -> usize {
+    match *node {
+        Node::Leaf => 0,
+        Node::Two { ref left, ref right, .. } => {
             let l_height = height_r(left);
             let r_height = height_r(right);
             if l_height != r_height {
@@ -289,7 +302,7 @@ fn height_r<T: Ord>(node: &Link<T>) -> usize {
             }
             l_height + 1
         }
-        Some(Node::Three { ref left, ref middle, ref right, .. }) => {
+        Node::Three { ref left, ref middle, ref right, .. } => {
             let l_height = height_r(left);
             let m_height = height_r(middle);
             let r_height = height_r(right);
@@ -301,15 +314,15 @@ fn height_r<T: Ord>(node: &Link<T>) -> usize {
     }
 }
 
-fn count_r<T: Ord>(node: &Link<T>) -> usize {
-    match node.as_ref().map(AsRef::as_ref) {
-        None => 0,
-        Some(Node::Two { ref left, ref right, .. }) => {
+fn count_r<T: Ord>(node: &Node<T>) -> usize {
+    match *node {
+        Node::Leaf => 0,
+        Node::Two { ref left, ref right, .. } => {
             let l_count = count_r(left);
             let r_count = count_r(right);
             l_count + r_count + 1
         }
-        Some(Node::Three { ref left, ref middle, ref right, .. }) => {
+        Node::Three { ref left, ref middle, ref right, .. } => {
             let l_count = count_r(left);
             let m_count = count_r(middle);
             let r_count = count_r(right);
@@ -319,41 +332,45 @@ fn count_r<T: Ord>(node: &Link<T>) -> usize {
 }
 
 impl<T: Ord + ToString> Node<T> {
-    pub fn dot_graph<W: Write>(&self, id: &mut usize, wr: &mut W) -> usize {
+    pub fn dot_graph<W: Write>(&self, id: &mut usize, wr: &mut W) -> Option<usize> {
+        if self.is_leaf() {
+            return None;
+        }
+
         writeln!(wr, "  node{} [label=\"{}\"]", id, self.dot_label()).unwrap();
         let id_self = *id;
         *id += 1;
         match *self {
+            Node::Leaf => (),
             Node::Two { ref left, ref right, .. } => {
-                if let Some(left) = left {
-                    let id_child = left.dot_graph(id, wr);
+                if let Some(id_child) = left.dot_graph(id, wr) {
                     writeln!(wr, "  node{}:l -> node{}", id_self, id_child).unwrap();
                 }
-                if let Some(right) = right {
-                    let id_child = right.dot_graph(id, wr);
+
+                if let Some(id_child) = right.dot_graph(id, wr) {
                     writeln!(wr, "  node{}:r -> node{}", id_self, id_child).unwrap();
                 }
             }
             Node::Three { ref left, ref middle, ref right, .. } => {
-                if let Some(left) = left {
-                    let id_child = left.dot_graph(id, wr);
+                if let Some(id_child) = left.dot_graph(id, wr) {
                     writeln!(wr, "  node{}:l -> node{}", id_self, id_child).unwrap();
                 }
-                if let Some(middle) = middle {
-                    let id_child = middle.dot_graph(id, wr);
+
+                if let Some(id_child) = middle.dot_graph(id, wr) {
                     writeln!(wr, "  node{}:m -> node{}", id_self, id_child).unwrap();
                 }
-                if let Some(right) = right {
-                    let id_child = right.dot_graph(id, wr);
+
+                if let Some(id_child) = right.dot_graph(id, wr) {
                     writeln!(wr, "  node{}:r -> node{}", id_self, id_child).unwrap();
                 }
             }
         }
-        id_self
+        Some(id_self)
     }
 
     pub fn dot_label(&self) -> String {
         match *self {
+            Node::Leaf => "".to_owned(),
             Node::Two { ref value, .. } => {
                 format!("<l> | {} | <r>", value.to_string())
             }
@@ -367,23 +384,24 @@ impl<T: Ord + ToString> Node<T> {
 impl<T: Ord> TwoThreeTree<T> {
     pub fn new() -> TwoThreeTree<T> {
         TwoThreeTree {
-            root: None,
+            root: Node::leaf_boxed(),
         }
     }
 
     pub fn insert(&mut self, x: T) {
-        match insert_r(self.root.take(), x) {
+        let root = std::mem::replace(&mut self.root, Node::leaf_boxed());
+        match insert_r(root, x) {
             InsRes::Consumed(node) => {
-                self.root = Some(node);
+                self.root = node;
             }
             InsRes::Pushed(new_value, left, right) => {
-                self.root = Some(Box::new(
+                self.root = Box::new(
                     Node::Two {
                         value: new_value,
                         left,
                         right,
                     }
-                ));
+                );
             }
         }
     }
@@ -393,34 +411,34 @@ impl<T: Ord> TwoThreeTree<T> {
     }
 
     pub fn contains(&self, x: &T) -> bool {
-        let mut cur = self.root.as_ref().map(AsRef::as_ref);
-        while let Some(curr) = cur {
-            match *curr {
+        let mut cur = self.root.as_ref();
+        loop {
+            match *cur {
+                Node::Leaf => return false,
                 Node::Two { ref value, ref left, ref right } => {
                     if x == value {
                         return true;
                     } else if x < value {
-                        cur = left.as_ref().map(AsRef::as_ref);
+                        cur = left;
                     } else {
-                        cur = right.as_ref().map(AsRef::as_ref);
+                        cur = right;
                     }
                 }
                 Node::Three { ref l_value, ref r_value, ref left, ref middle, ref right } => {
                     if x < l_value {
-                        cur = left.as_ref().map(AsRef::as_ref);
+                        cur = left;
                     } else if x == l_value {
                         return true;
                     } else if l_value < x && x < r_value {
-                        cur = middle.as_ref().map(AsRef::as_ref);
+                        cur = middle;
                     } else if x == r_value {
                         return true;
                     } else if x > r_value {
-                        cur = right.as_ref().map(AsRef::as_ref);
+                        cur = right;
                     }
                 }
             }
         }
-        false
     }
 
     pub fn height(&self) -> usize {
@@ -435,10 +453,7 @@ impl<T: Ord + ToString> TwoThreeTree<T> {
         writeln!(wr, "digraph g {{").unwrap();
         writeln!(wr, "  node [shape=record, height=.1];").unwrap();
 
-        if let Some(ref node) = self.root {
-            node.dot_graph(&mut 0, wr);
-        }
-
+        self.root.dot_graph(&mut 0, wr);
         writeln!(wr, "}}").unwrap();
 
         unsafe { String::from_utf8_unchecked(buffer) }
