@@ -9,33 +9,31 @@ use std::io::Write;
 // TODO: Support key-value
 // TODO: Deletion
 
-type Link<T> = Box<Node<T>>;
-
 // Trait bounds on struct? c.f. https://github.com/rust-lang/rust-clippy/issues/1689
 pub struct TwoThreeTree<T: Ord> {
-    root: Link<T>,
+    root: Box<Node<T>>,
 }
 
 pub enum Node<T: Ord> {
     Leaf,
     Two {
         value: T,
-        left: Link<T>,
-        right: Link<T>,
+        left: Box<Node<T>>,
+        right: Box<Node<T>>,
     },
     Three {
         l_value: T,
         r_value: T,
-        left: Link<T>,
-        middle: Link<T>,
-        right: Link<T>,
+        left: Box<Node<T>>,
+        middle: Box<Node<T>>,
+        right: Box<Node<T>>,
     },
 }
 
 /// Insertion result
 enum InsRes<T: Ord> {
     Consumed(Box<Node<T>>),
-    Pushed(T, Link<T>, Link<T>),
+    Pushed(T, Box<Node<T>>, Box<Node<T>>),
 }
 
 impl<T: Ord> Node<T> {
@@ -67,266 +65,265 @@ impl<T: Ord> Node<T> {
             _ => false,
         }
     }
-}
 
-// ===== Functions on `Link` =====
-fn insert_r<T: Ord>(node: Link<T>, x: T) -> InsRes<T> {
-    match *node {
-        Node::Leaf => {
-            InsRes::Consumed(Node::new2_boxed(x))
-        }
-        Node::Two { ref left, ref right, .. } if left.is_leaf() && right.is_leaf() => {
-            let node = if let Node::Two { value, .. } = *node {
-                match x.cmp(&value) {
-                    Ordering::Equal => Node::new2_boxed(value),
-                    Ordering::Less => Node::new3_boxed(x, value),
-                    Ordering::Greater => Node::new3_boxed(value, x),
+    fn insert(self, x: T) -> InsRes<T> {
+        match self {
+            Node::Leaf => {
+                InsRes::Consumed(Node::new2_boxed(x))
+            }
+            Node::Two { ref left, ref right, .. } if left.is_leaf() && right.is_leaf() => {
+                let node = if let Node::Two { value, .. } = self {
+                    match x.cmp(&value) {
+                        Ordering::Equal => Node::new2_boxed(value),
+                        Ordering::Less => Node::new3_boxed(x, value),
+                        Ordering::Greater => Node::new3_boxed(value, x),
+                    }
+                } else {
+                    unreachable!();
+                };
+                InsRes::Consumed(node)
+            }
+            Node::Two { .. } => {
+                if let Node::Two { value, left, right } = self {
+                    match x.cmp(&value) {
+                        Ordering::Equal => {
+                            InsRes::Consumed(Box::new(
+                                Node::Two {
+                                    value,
+                                    left,
+                                    right,
+                                }
+                            ))
+                        }
+                        Ordering::Less => {
+                            match left.insert(x) {
+                                InsRes::Consumed(left) => {
+                                    InsRes::Consumed(Box::new(
+                                        Node::Two {
+                                            value,
+                                            left,
+                                            right,
+                                        }
+                                    ))
+                                }
+                                InsRes::Pushed(new_value, new_left, new_right) => {
+                                    InsRes::Consumed(Box::new(
+                                        Node::Three {
+                                            l_value: new_value,
+                                            r_value: value,
+                                            left: new_left,
+                                            middle: new_right,
+                                            right,
+                                        }
+                                    ))
+                                }
+                            }
+                        }
+                        Ordering::Greater => {
+                            match right.insert(x) {
+                                InsRes::Consumed(right) => {
+                                    InsRes::Consumed(Box::new(
+                                        Node::Two {
+                                            value,
+                                            left,
+                                            right,
+                                        }
+                                    ))
+                                }
+                                InsRes::Pushed(new_value, new_left, new_right) => {
+                                    InsRes::Consumed(Box::new(
+                                        Node::Three {
+                                            l_value: value,
+                                            r_value: new_value,
+                                            left,
+                                            middle: new_left,
+                                            right: new_right,
+                                        }
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    unreachable!();
                 }
-            } else {
-                unreachable!();
-            };
-            InsRes::Consumed(node)
-        }
-        Node::Two { .. } => {
-            if let Node::Two { value, left, right } = *node {
-                match x.cmp(&value) {
-                    Ordering::Equal => {
+            }
+            Node::Three { ref left, ref middle, ref right, .. }
+                if left.is_leaf() && middle.is_leaf() && right.is_leaf() =>
+            {
+                if let Node::Three { l_value, r_value, left, middle, right } = self {
+                    if x == l_value || x == r_value {
                         InsRes::Consumed(Box::new(
-                            Node::Two {
-                                value,
+                            Node::Three {
+                                l_value,
+                                r_value,
                                 left,
+                                middle,
                                 right,
                             }
                         ))
+                    } else {
+                        let (l, m, r) = if x < l_value {
+                            (x, l_value, r_value)
+                        } else if x < r_value {
+                            (l_value, x, r_value)
+                        } else {
+                            (l_value, r_value, x)
+                        };
+                        InsRes::Pushed(
+                            m,
+                            Node::new2_boxed(l),
+                            Node::new2_boxed(r),
+                        )
                     }
-                    Ordering::Less => {
-                        match insert_r(left, x) {
+                } else {
+                    unreachable!();
+                }
+            }
+            Node::Three { .. } => {
+                if let Node::Three { l_value, r_value, left, middle, right } = self {
+                    if x == l_value || x == r_value {
+                        InsRes::Consumed(Box::new(
+                            Node::Three {
+                                l_value,
+                                r_value,
+                                left,
+                                middle,
+                                right,
+                            }
+                        ))
+                    } else if x < l_value {
+                        match left.insert(x) {
                             InsRes::Consumed(left) => {
                                 InsRes::Consumed(Box::new(
-                                    Node::Two {
-                                        value,
+                                    Node::Three {
+                                        l_value,
+                                        r_value,
                                         left,
+                                        middle,
                                         right,
                                     }
                                 ))
                             }
                             InsRes::Pushed(new_value, new_left, new_right) => {
+                                InsRes::Pushed(
+                                    l_value,
+                                    Box::new(Node::Two {
+                                        value: new_value,
+                                        left: new_left,
+                                        right: new_right,
+                                    }),
+                                    Box::new(Node::Two {
+                                        value: r_value,
+                                        left: middle,
+                                        right,
+                                    }),
+                                )
+                            }
+                        }
+                    } else if x < r_value {
+                        match middle.insert(x) {
+                            InsRes::Consumed(middle) => {
                                 InsRes::Consumed(Box::new(
                                     Node::Three {
-                                        l_value: new_value,
-                                        r_value: value,
-                                        left: new_left,
-                                        middle: new_right,
+                                        l_value,
+                                        r_value,
+                                        left,
+                                        middle,
                                         right,
                                     }
                                 ))
                             }
+                            InsRes::Pushed(new_value, new_left, new_right) => {
+                                InsRes::Pushed(
+                                    new_value,
+                                    Box::new(Node::Two {
+                                        value: l_value,
+                                        left,
+                                        right: new_left,
+                                    }),
+                                    Box::new(Node::Two {
+                                        value: r_value,
+                                        left: new_right,
+                                        right,
+                                    }),
+                                )
+                            }
                         }
-                    }
-                    Ordering::Greater => {
-                        match insert_r(right, x) {
+                    } else {
+                        match right.insert(x) {
                             InsRes::Consumed(right) => {
                                 InsRes::Consumed(Box::new(
-                                    Node::Two {
-                                        value,
+                                    Node::Three {
+                                        l_value,
+                                        r_value,
                                         left,
+                                        middle,
                                         right,
                                     }
                                 ))
                             }
                             InsRes::Pushed(new_value, new_left, new_right) => {
-                                InsRes::Consumed(Box::new(
-                                    Node::Three {
-                                        l_value: value,
-                                        r_value: new_value,
+                                InsRes::Pushed(
+                                    r_value,
+                                    Box::new(Node::Two {
+                                        value: l_value,
                                         left,
-                                        middle: new_left,
+                                        right: middle,
+                                    }),
+                                    Box::new(Node::Two {
+                                        value: new_value,
+                                        left: new_left,
                                         right: new_right,
-                                    }
-                                ))
+                                    }),
+                                )
                             }
                         }
                     }
-                }
-            } else {
-                unreachable!();
-            }
-        }
-        Node::Three { ref left, ref middle, ref right, .. }
-            if left.is_leaf() && middle.is_leaf() && right.is_leaf() =>
-        {
-            if let Node::Three { l_value, r_value, left, middle, right } = *node {
-                if x == l_value || x == r_value {
-                    InsRes::Consumed(Box::new(
-                        Node::Three {
-                            l_value,
-                            r_value,
-                            left,
-                            middle,
-                            right,
-                        }
-                    ))
                 } else {
-                    let (l, m, r) = if x < l_value {
-                        (x, l_value, r_value)
-                    } else if x < r_value {
-                        (l_value, x, r_value)
-                    } else {
-                        (l_value, r_value, x)
-                    };
-                    InsRes::Pushed(
-                        m,
-                        Node::new2_boxed(l),
-                        Node::new2_boxed(r),
-                    )
+                    unreachable!();
                 }
-            } else {
-                unreachable!();
-            }
-        }
-        Node::Three { .. } => {
-            if let Node::Three { l_value, r_value, left, middle, right } = *node {
-                if x == l_value || x == r_value {
-                    InsRes::Consumed(Box::new(
-                        Node::Three {
-                            l_value,
-                            r_value,
-                            left,
-                            middle,
-                            right,
-                        }
-                    ))
-                } else if x < l_value {
-                    match insert_r(left, x) {
-                        InsRes::Consumed(left) => {
-                            InsRes::Consumed(Box::new(
-                                Node::Three {
-                                    l_value,
-                                    r_value,
-                                    left,
-                                    middle,
-                                    right,
-                                }
-                            ))
-                        }
-                        InsRes::Pushed(new_value, new_left, new_right) => {
-                            InsRes::Pushed(
-                                l_value,
-                                Box::new(Node::Two {
-                                    value: new_value,
-                                    left: new_left,
-                                    right: new_right,
-                                }),
-                                Box::new(Node::Two {
-                                    value: r_value,
-                                    left: middle,
-                                    right,
-                                }),
-                            )
-                        }
-                    }
-                } else if x < r_value {
-                    match insert_r(middle, x) {
-                        InsRes::Consumed(middle) => {
-                            InsRes::Consumed(Box::new(
-                                Node::Three {
-                                    l_value,
-                                    r_value,
-                                    left,
-                                    middle,
-                                    right,
-                                }
-                            ))
-                        }
-                        InsRes::Pushed(new_value, new_left, new_right) => {
-                            InsRes::Pushed(
-                                new_value,
-                                Box::new(Node::Two {
-                                    value: l_value,
-                                    left,
-                                    right: new_left,
-                                }),
-                                Box::new(Node::Two {
-                                    value: r_value,
-                                    left: new_right,
-                                    right,
-                                }),
-                            )
-                        }
-                    }
-                } else {
-                    match insert_r(right, x) {
-                        InsRes::Consumed(right) => {
-                            InsRes::Consumed(Box::new(
-                                Node::Three {
-                                    l_value,
-                                    r_value,
-                                    left,
-                                    middle,
-                                    right,
-                                }
-                            ))
-                        }
-                        InsRes::Pushed(new_value, new_left, new_right) => {
-                            InsRes::Pushed(
-                                r_value,
-                                Box::new(Node::Two {
-                                    value: l_value,
-                                    left,
-                                    right: middle,
-                                }),
-                                Box::new(Node::Two {
-                                    value: new_value,
-                                    left: new_left,
-                                    right: new_right,
-                                }),
-                            )
-                        }
-                    }
-                }
-            } else {
-                unreachable!();
             }
         }
     }
-}
 
-fn height_r<T: Ord>(node: &Node<T>) -> usize {
-    match *node {
-        Node::Leaf => 0,
-        Node::Two { ref left, ref right, .. } => {
-            let l_height = height_r(left);
-            let r_height = height_r(right);
-            if l_height != r_height {
-                panic!("Invalid tree");
+    fn height(&self) -> usize {
+        match *self {
+            Node::Leaf => 0,
+            Node::Two { ref left, ref right, .. } => {
+                let l_height = left.height();
+                let r_height = right.height();
+                if l_height != r_height {
+                    panic!("Invalid tree");
+                }
+                l_height + 1
             }
-            l_height + 1
-        }
-        Node::Three { ref left, ref middle, ref right, .. } => {
-            let l_height = height_r(left);
-            let m_height = height_r(middle);
-            let r_height = height_r(right);
-            if l_height != m_height || m_height != r_height {
-                panic!("Invalid tree");
+            Node::Three { ref left, ref middle, ref right, .. } => {
+                let l_height = left.height();
+                let m_height = middle.height();
+                let r_height = right.height();
+                if l_height != m_height || m_height != r_height {
+                    panic!("Invalid tree");
+                }
+                l_height + 1
             }
-            l_height + 1
         }
     }
-}
 
-fn count_r<T: Ord>(node: &Node<T>) -> usize {
-    match *node {
-        Node::Leaf => 0,
-        Node::Two { ref left, ref right, .. } => {
-            let l_count = count_r(left);
-            let r_count = count_r(right);
-            l_count + r_count + 1
-        }
-        Node::Three { ref left, ref middle, ref right, .. } => {
-            let l_count = count_r(left);
-            let m_count = count_r(middle);
-            let r_count = count_r(right);
-            l_count + m_count + r_count + 2
+    fn count(&self) -> usize {
+        match *self {
+            Node::Leaf => 0,
+            Node::Two { ref left, ref right, .. } => {
+                let l_count = left.count();
+                let r_count = right.count();
+                l_count + r_count + 1
+            }
+            Node::Three { ref left, ref middle, ref right, .. } => {
+                let l_count = left.count();
+                let m_count = middle.count();
+                let r_count = right.count();
+                l_count + m_count + r_count + 2
+            }
         }
     }
 }
@@ -390,7 +387,7 @@ impl<T: Ord> TwoThreeTree<T> {
 
     pub fn insert(&mut self, x: T) {
         let root = std::mem::replace(&mut self.root, Node::leaf_boxed());
-        match insert_r(root, x) {
+        match root.insert(x) {
             InsRes::Consumed(node) => {
                 self.root = node;
             }
@@ -407,7 +404,7 @@ impl<T: Ord> TwoThreeTree<T> {
     }
 
     pub fn count(&self) -> usize {
-        count_r(&self.root)
+        self.root.count()
     }
 
     pub fn contains(&self, x: &T) -> bool {
@@ -442,7 +439,7 @@ impl<T: Ord> TwoThreeTree<T> {
     }
 
     pub fn height(&self) -> usize {
-        height_r(&self.root)
+        self.root.height()
     }
 }
 
