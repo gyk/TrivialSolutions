@@ -25,7 +25,6 @@ type GraphMat (nVertices: int) =
 
         member this.ExtractEdges () : seq<(int * int) * float> =
             let n = (this :> IGraph).NumVertices
-            // How about size hint and pre-allocation?
             seq {
                 for i = 0 to (n - 1) do
                     for j = 0 to (n - 1) do
@@ -37,7 +36,7 @@ type GraphMat (nVertices: int) =
     member this.AdjMatrix = adjMat
     member this.RemoveEdge ((fromV, toV): int * int) : float option =
         let old = adjMat.[fromV, toV]
-        adjMat.[toV, fromV] <- None
+        adjMat.[fromV, toV] <- None
         nEdges <- nEdges - 1
         old
 

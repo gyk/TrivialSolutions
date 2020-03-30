@@ -2,7 +2,7 @@
 open ShortestPaths
 
 type GraphData =
-    { nVertices: int;
+    { nVertices: int
       edges: seq<(int * int) * float> }
 
     member this.HasNegativeEdges () : bool =
@@ -72,50 +72,48 @@ let hasNegativeCycles (testId: int) (gData: GraphData) : bool =
 let main argv =
     // Trivial
     let g0Data = {
-        nVertices = 1;
+        nVertices = 1
         edges = []
     }
 
     // Sedgewick's book, Fig. 21.8
     let g1Data = {
-        nVertices = 6;
-        edges =
-        [
-            ((0, 1), 0.41);
-            ((0, 5), 0.29);
-            ((1, 2), 0.51);
-            ((1, 4), 0.32);
-            ((2, 3), 0.50);
-            ((3, 0), 0.45);
-            ((3, 5), 0.38);
-            ((4, 2), 0.32);
-            ((4, 3), 0.36);
-            ((5, 1), 0.29);
-            ((5, 4), 0.21);
+        nVertices = 6
+        edges = [
+            ((0, 1), 0.41)
+            ((0, 5), 0.29)
+            ((1, 2), 0.51)
+            ((1, 4), 0.32)
+            ((2, 3), 0.50)
+            ((3, 0), 0.45)
+            ((3, 5), 0.38)
+            ((4, 2), 0.32)
+            ((4, 3), 0.36)
+            ((5, 1), 0.29)
+            ((5, 4), 0.21)
         ]
     }
 
     // The inverse graph of Graph 1
     let g2Data = {
-        nVertices = g1Data.nVertices;
+        nVertices = g1Data.nVertices
         edges = g1Data.edges
                 |> Seq.map (fun ((a, b), wt) -> ((b, a), wt))
     }
 
     // Rosetta Code, Dijkstra's algorithm
     let g3Data = {
-        nVertices = 6;
-        edges =
-        [
-            ((0, 1), 7.);
-            ((0, 2), 9.);
-            ((0, 5), 14.);
-            ((1, 2), 10.);
-            ((1, 3), 15.);
-            ((2, 3), 11.);
-            ((2, 5), 2.);
-            ((3, 4), 6.);
-            ((4, 5), 9.);
+        nVertices = 6
+        edges = [
+            ((0, 1), 7.)
+            ((0, 2), 9.)
+            ((0, 5), 14.)
+            ((1, 2), 10.)
+            ((1, 3), 15.)
+            ((2, 3), 11.)
+            ((2, 5), 2.)
+            ((3, 4), 6.)
+            ((4, 5), 9.)
         ]
     }
 
@@ -123,19 +121,18 @@ let main argv =
     // negative.
     let g4Data = {
         nVertices = 6;
-        edges =
-        [
-            ((0, 1), 0.41);
-            ((0, 5), 0.29);
-            ((1, 2), 0.51);
-            ((1, 4), 0.32);
-            ((2, 3), 0.50);
-            ((3, 0), 0.45);
-            ((3, 5), -0.38);
-            ((4, 2), 0.32);
-            ((4, 3), 0.36);
-            ((5, 1), -0.29);
-            ((5, 4), 0.21);
+        edges = [
+            ((0, 1), 0.41)
+            ((0, 5), 0.29)
+            ((1, 2), 0.51)
+            ((1, 4), 0.32)
+            ((2, 3), 0.50)
+            ((3, 0), 0.45)
+            ((3, 5), -0.38)
+            ((4, 2), 0.32)
+            ((4, 3), 0.36)
+            ((5, 1), -0.29)
+            ((5, 4), 0.21)
         ]
     }
 
@@ -150,17 +147,16 @@ let main argv =
                 testShortestPaths i g
 
         if not testRes then
-            failwith <| sprintf "Graph %d inconsistent results\n" i
+            failwithf "Graph %d inconsistent results\n" i
 
     // Graph with negative cycles. From GeeksforGeeks.
     let g5Data = {
         nVertices = 4;
-        edges =
-        [
-            ((0, 1), 1.);
-            ((1, 2), -1.);
-            ((2, 3), -1.);
-            ((3, 0), -1.);
+        edges = [
+            ((0, 1), 1.)
+            ((1, 2), -1.)
+            ((2, 3), -1.)
+            ((3, 0), -1.)
         ]
     }
 
