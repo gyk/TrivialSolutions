@@ -2,25 +2,27 @@ module Graph
 
 open System.Collections.Generic
 
+open InfInt
+
 type Edge =
-    { capacity: int
-      mutable flow: int } with
-    member this.Residual : int =
+    { capacity: InfInt
+      mutable flow: InfInt } with
+    member this.Residual : InfInt =
         this.capacity - this.flow
-    member this.Increase (delta: int) =
+    member this.Increase (delta: InfInt) =
         this.flow <- min this.capacity (this.flow + delta)
     member this.IsVirtual : bool =
-        this.capacity = 0
+        this.capacity = Finite 0
 
 
-let newEdge (capacity: int) : Edge =
+let newEdge (capacity: InfInt) : Edge =
     { capacity = capacity
-      flow = 0 }
+      flow = Finite 0 }
 
 type IGraph =
     abstract member NumVertices : int
     abstract member NumEdges : int
-    abstract member AddEdge : (int * int) -> int -> unit
+    abstract member AddEdge : (int * int) -> InfInt -> unit
     abstract member GetEdge: (int * int) -> Edge option
     abstract member RemoveEdge: (int * int) -> Edge option
     abstract member GetEdges : int -> seq<int * Edge>
@@ -36,9 +38,9 @@ type GraphMat (nVertices: int) =
         member this.NumVertices : int = nVertices
         member this.NumEdges : int = nEdges
 
-        member this.AddEdge ((fromV, toV): int * int) (capacity: int) =
+        member this.AddEdge ((fromV, toV): int * int) (capacity: InfInt) =
             adjMat.[fromV, toV] <- Some (newEdge capacity)
-            adjMat.[toV, fromV] <- Some (newEdge 0)
+            adjMat.[toV, fromV] <- Some (newEdge <| Finite 0)
             nEdges <- nEdges + 1
 
         member this.GetEdge ((fromV, toV): int * int) : Edge option =
@@ -65,7 +67,7 @@ type GraphMat (nVertices: int) =
             for i = 0 to (n - 1) do
                 for j = 0 to (n - 1) do
                     match adjMat.[i, j] with
-                    | Some e -> e.flow <- 0
+                    | Some e -> e.flow <- Finite 0
                     | _ -> ()
 
     member this.AdjMatrix = adjMat
@@ -85,9 +87,9 @@ type GraphList (nVertices: int) =
         member this.NumVertices : int = nVertices
         member this.NumEdges : int = nEdges
 
-        member this.AddEdge ((fromV, toV): int * int) (capacity: int) =
+        member this.AddEdge ((fromV, toV): int * int) (capacity: InfInt) =
             adjList.[fromV].[toV] <- newEdge capacity
-            adjList.[toV].[fromV] <- newEdge 0
+            adjList.[toV].[fromV] <- newEdge <| Finite 0
             nEdges <- nEdges + 1
 
         member this.GetEdge ((fromV, toV): int * int) : Edge option =
@@ -113,4 +115,4 @@ type GraphList (nVertices: int) =
         member this.Reset () =
             for eList in adjList do
                 for KeyValue(_, e) in eList do
-                    e.flow <- 0
+                    e.flow <- Finite 0

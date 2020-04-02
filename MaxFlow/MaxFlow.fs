@@ -3,17 +3,17 @@
 // ## References
 //
 // - Algorithms in C, Robert Sedgewick, Chapter 22.
+// - https://oi-wiki.org/graph/flow/max-flow/
 
 module MaxFlow
     open System.Collections.Generic
 
+    open InfInt
     open Graph
 
-    let internal intMax = System.Int32.MaxValue
-
-    let private bfsEdmondsKarp (g: GraphList) (s: int) (t: int) : (int option [] * int) option =
-        let q = Queue<int * int>()
-        q.Enqueue((s, intMax))
+    let private bfsEdmondsKarp (g: GraphList) (s: int) (t: int) : (int option [] * InfInt) option =
+        let q = Queue<int * InfInt>()
+        q.Enqueue((s, Infinite))
         let parents: int option [] = Array.init ((g :> IGraph).NumVertices) (fun _ -> None)
         parents.[s] <- Some s
 
@@ -21,7 +21,7 @@ module MaxFlow
         while Option.isNone flow && q.Count > 0 do
             let (head, f) = q.Dequeue()
             for KeyValue(n, e) in g.AdjList.[head] do
-                if Option.isNone parents.[n] && e.Residual > 0 then
+                if Option.isNone parents.[n] && e.Residual > Finite 0 then
                     parents.[n] <- Some head
                     let f = min f e.Residual
                     q.Enqueue((n, f))
@@ -30,7 +30,7 @@ module MaxFlow
 
         Option.map (fun f -> (parents, f)) flow
 
-    let EdmondsKarp (g: GraphList) (s: int) (t: int) : int =
+    let EdmondsKarp (g: GraphList) (s: int) (t: int) : InfInt =
         let rec go flow =
             match bfsEdmondsKarp g s t with
             | Some (parents, df) ->
@@ -42,7 +42,7 @@ module MaxFlow
                     x <- p
                 go (flow + df)
             | None -> flow
-        go 0
+        go (Finite 0)
 
     let private bfsDinic (g: GraphList) (s: int) : int option [] =
         let q = Queue<int>()
@@ -53,17 +53,17 @@ module MaxFlow
         while q.Count > 0 do
             let head = q.Dequeue()
             for KeyValue(n, e) in g.AdjList.[head] do
-                if Option.isNone d.[n] && e.Residual > 0 then
+                if Option.isNone d.[n] && e.Residual > Finite 0 then
                     d.[n] <- Option.map (fun x -> x + 1) d.[head]
                     q.Enqueue(n)
         d
 
-    let Dinic (g: GraphList) (s: int) (t: int) : int =
-        let rec dfs (levelG: int option []) (x: int) (flowCap: int) : int =
-            if x = t || flowCap = 0 then
+    let Dinic (g: GraphList) (s: int) (t: int) : InfInt =
+        let rec dfs (levelG: int option []) (x: int) (flowCap: InfInt) : InfInt =
+            if x = t || flowCap = Finite 0 then
                 flowCap
             else
-                let mutable flow = 0
+                let mutable flow = Finite 0
                 let mutable flowCap = flowCap
                 for KeyValue(n, e) in g.AdjList.[x] do
                     match (levelG.[x], levelG.[n]) with
@@ -80,11 +80,11 @@ module MaxFlow
             let levelGraph = bfsDinic g s
             match levelGraph.[t] with
             | Some _ ->
-                let df = dfs levelGraph s intMax
+                let df = dfs levelGraph s Infinite
                 go (flow + df)
             | None -> flow
 
         if s = t then
-            0
+            Finite 0
         else
-            go 0
+            go (Finite 0)

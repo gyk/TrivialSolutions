@@ -1,5 +1,12 @@
+open InfInt
 open Graph
 open MaxFlow
+
+let private fromInt (cap: int) : InfInt =
+    if cap < 0 then
+        Infinite
+    else
+        Finite cap
 
 type GraphData =
     { nVertices: int
@@ -10,27 +17,29 @@ type GraphData =
 
     member this.ToGraphMat () : GraphMat =
         let gMat = GraphMat(this.nVertices)
-        for e in this.edges do
-            e ||> (gMat :> IGraph).AddEdge
+        for (fromTo, c) in this.edges do
+            (gMat :> IGraph).AddEdge fromTo (fromInt c)
         gMat
 
     member this.ToGraphList () : GraphList =
         let gList = GraphList(this.nVertices)
-        for e in this.edges do
-            e ||> (gList :> IGraph).AddEdge
+        for (fromTo, c) in this.edges do
+            (gList :> IGraph).AddEdge fromTo (fromInt c)
         gList
 
 let testMaxFlow (testId: int) (gData: GraphData) : bool =
     let gList = gData.ToGraphList()
     printfn "\n\nGraph %d\n========\n" testId
     let flowEdmondsKarp = EdmondsKarp gList gData.source gData.sink
-    printfn "Max flow (Edmonds Karp) = %d\n" flowEdmondsKarp
+    printfn "Max flow (Edmonds Karp) = %A\n" flowEdmondsKarp
     (gList :> IGraph).Reset()
     let flowDinic = Dinic gList gData.source gData.sink
-    printfn "Max flow (Edmonds Karp) = %d\n" flowDinic
+    printfn "Max flow (Edmonds Karp) = %A\n" flowDinic
 
     gData.expectedFlow
-    |> Option.map (fun f -> f = flowEdmondsKarp && f = flowDinic)
+    |> Option.map (fun f ->
+        let f = fromInt f
+        f = flowEdmondsKarp && f = flowDinic)
     |> Option.defaultValue true
 
 [<EntryPoint>]
@@ -41,7 +50,7 @@ let main argv =
         edges = []
         source = 0
         sink = 0
-        expectedFlow = Some 0
+        expectedFlow = None
     }
 
     // Sedgewick's book, Fig. 22.5
@@ -128,10 +137,10 @@ let main argv =
             ((0, 1), 100)
             ((0, 2), 200)
             ((0, 3), 150)
-            ((1, 4), intMax)
-            ((1, 5), intMax)
-            ((2, 5), intMax)
-            ((3, 6), intMax)
+            ((1, 4), -1)
+            ((1, 5), -1)
+            ((2, 5), -1)
+            ((3, 6), -1)
             ((4, 7), 200)
             ((5, 7), 100)
             ((6, 7), 50)

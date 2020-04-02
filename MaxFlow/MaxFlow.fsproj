@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="InfInt.fs" />
     <Compile Include="Graph.fs" />
     <Compile Include="MaxFlow.fs" />
     <Compile Include="Program.fs" />
