@@ -1,0 +1,7 @@
+name = "Operation"
+uuid = "2b3f0289-2bc9-434f-b115-1bc46fdc74d7"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
