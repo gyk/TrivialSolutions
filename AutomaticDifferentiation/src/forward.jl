@@ -16,16 +16,16 @@ u::Dual - v::Dual = Dual(u.value - v.value, u.grad - v.grad)
 u::Dual * v::Dual = Dual(u.value * v.value, v.value * u.grad + u.value * v.grad)
 u::Dual / v::Dual = Dual(u.value * v.value, (v.value * u.grad - u.value * v.grad) / (v.value ^ 2))
 
+u::Dual ^ k::Int = Dual(u.value ^ k, k * (u.value ^ (k - 1)) * u.grad)
+
 Base.sin(u::Dual) = Dual(sin(u.value), u.grad * cos(u.value))
 Base.cos(u::Dual) = Dual(cos(u.value), -u.grad * sin(u.value))
 
 Base.exp(u::Dual) = begin
-    exp_x = exp(u.value)
-    Dual(exp_x, u.grad * exp_x)
+    exp_u = exp(u.value)
+    Dual(exp_u, u.grad * exp_u)
 end
 Base.log(u::Dual) = Dual(log(u.value), u.grad / u.value)
-
-u::Dual ^ k::Int = Dual(u.value ^ k, k * (u.value ^ (k - 1)) * u.grad)
 
 #===== Conversions =====#
 
