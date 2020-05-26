@@ -1,10 +1,9 @@
-using PaddedViews: PaddedView
-
 export Layer, forward!, backward!
 
 "A fully-connected layer"
 mutable struct Layer
     weights::Matrix{Float64}  # W
+    biases::Matrix{Float64}  # b
     activation_fn::Function  # σ
     grad_fn::Function  # ∇σ, or dy/dz
 
@@ -24,15 +23,14 @@ function Layer(
     grad_fn::Function = (_, _) -> 1.0,
 )
     (n_out, n_in) = sz
-    n_in += 1  # bias
     weights = randn(n_out, n_in) .* sqrt(2.0 / (n_out + n_in))  # Xavier initialization
-    weights[:, end] .= 0.0
+    biases = zeros(n_out, 1)
 
     inputs, weighted_sums, activations = map(1:3) do _
         Matrix{Float64}(undef, 0, 0)
     end
 
-    Layer(weights, activation_fn, grad_fn,
+    Layer(weights, biases, activation_fn, grad_fn,
         inputs, weighted_sums, activations)
 end
 
@@ -44,10 +42,9 @@ Return value: n_out × batch_size
 """
 function forward!(l::Layer, x::AbstractMatrix{Float64}; training::Bool=true)::Matrix{Float64}
     (d, n) = size(x)
-    x = PaddedView(1.0, x, (d + 1, n))
 
-    W, σ = l.weights, l.activation_fn
-    z = W * x
+    W, b, σ = l.weights, l.biases, l.activation_fn
+    z = W * x .+ b
     y = σ.(z)
 
     if training
@@ -98,15 +95,18 @@ Given ∂e/∂y of the next layer, does back-propagation, and returns ∂e/∂y 
 ∂e_over_∂y: n_out × batch_size
 Return value: n_in × batch_size
 """
-function backward!(l::Layer, ∂e_over_∂y::Matrix{Float64}, η::Float64)::Matrix{Float64}
+function backward!(l::Layer, ∂e_over_∂y::AbstractMatrix{Float64}, η::Float64)::Matrix{Float64}
     # Architecture: Layer i -> Layer j. BP: Layer j ⋯> Layer i
-    W, y_i, z_j, y_j = l.weights, l.inputs, l.weighted_sums, l.activations
+    W, b = l.weights, l.biases
+    y_i, z_j, y_j = l.inputs, l.weighted_sums, l.activations
     ∇σ, ∇y_j = l.grad_fn, ∂e_over_∂y
 
     ∇σ_j = ∇σ.(z_j, y_j)
     ∇z_j = ∇y_j .* ∇σ_j
-    ∇y_i = (@view W[:, 1:(end - 1)])' * ∇z_j  # removes bias
+    ∇y_i = W' * ∇z_j
     ∇W = ∇z_j * y_i'  # sum of all data in the batch
+    ∇b = sum(∇z_j, dims=2)
     W .-= η * ∇W
+    b .-= η * ∇b
     ∇y_i
 end
