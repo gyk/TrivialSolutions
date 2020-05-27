@@ -1,3 +1,5 @@
+using LinearAlgebra: mul!
+
 export Layer, forward!, backward!
 
 "A fully-connected layer"
@@ -11,6 +13,7 @@ mutable struct Layer
     inputs::Matrix{Float64}  # x
     weighted_sums::Matrix{Float64}  # z = W * x
     activations::Matrix{Float64}  # y = σ(z)
+    _z::Union{Nothing, Matrix{Float64}}  # pre-allocated z
 end
 
 # Weight initialization:
@@ -29,9 +32,10 @@ function Layer(
     inputs, weighted_sums, activations = map(1:3) do _
         Matrix{Float64}(undef, 0, 0)
     end
+    _z = nothing
 
     Layer(weights, biases, activation_fn, grad_fn,
-        inputs, weighted_sums, activations)
+        inputs, weighted_sums, activations, _z)
 end
 
 """
@@ -44,7 +48,17 @@ function forward!(l::Layer, x::AbstractMatrix{Float64}; training::Bool=true)::Ma
     (d, n) = size(x)
 
     W, b, σ = l.weights, l.biases, l.activation_fn
-    z = W * x .+ b
+
+    # Writes to pre-allocated matrix if possible.
+    # (This is actually slightly slower on the current toy datasets.)
+
+    # The last minibatch may not have the same size with the previous ones.
+    z = if isnothing(l._z) || size(l._z) != (size(W, 1), size(x, 2))
+        l._z = W * x .+ b
+    else
+        l._z .= b
+        mul!(l._z, W, x, 1.0, 1.0)
+    end
     y = σ.(z)
 
     if training

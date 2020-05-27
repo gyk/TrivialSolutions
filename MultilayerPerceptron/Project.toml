@@ -2,3 +2,6 @@ name = "MultilayerPerceptron"
 uuid = "b41483c7-9031-4d73-b5e8-f72a792c9494"
 authors = ["Yukun Guo <gyk.net@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

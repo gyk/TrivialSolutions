@@ -477,7 +477,7 @@ uuid = "e94cdb99-869f-56ef-bcf0-1ae2bcbe0389"
 version = "0.2.2"
 
 [[MultilayerPerceptron]]
-deps = ["PaddedViews"]
+deps = ["LinearAlgebra"]
 path = ".."
 uuid = "b41483c7-9031-4d73-b5e8-f72a792c9494"
 version = "0.1.0"
