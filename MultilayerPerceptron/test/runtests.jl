@@ -2,6 +2,31 @@ using Test
 
 using MultilayerPerceptron
 
+#===== Helpers =====#
+function cross_entropy(ŷ::AbstractMatrix{Float64}, y::AbstractMatrix{Float64})::Float64
+    n_batches = size(ŷ, 2)
+    -sum(@. y * log(ŷ)) / n_batches
+end
+
+function binary_cross_entropy(ŷ::Float64, y::Bool)::Float64
+    ϵ = eps(ŷ)
+    -log(ϵ + (y ? ŷ : 1.0 - ŷ))
+end
+
+@testset "Activation" begin
+    sz = (5, 3)
+    y = rand(Float64, sz) * 10
+    ŷ = rand(Float64, sz) * 10
+    (e, _) = logit_cross_entropy(ŷ, y)
+    @test e ≈ cross_entropy(softmax(ŷ), y)
+
+    len = 5
+    ŷ = rand(Float64, 1, len)
+    y = rand(Bool, 1, len)
+    (e, _) = logit_binary_cross_entropy(ŷ, y)
+    @test e ≈ sum(binary_cross_entropy.(logistic.(ŷ), y)) / len
+end
+
 @testset "Xor" begin
     N = 1000
 
