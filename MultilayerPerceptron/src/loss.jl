@@ -110,11 +110,12 @@ function logit_binary_cross_entropy(
 )::Tuple{Float64, Matrix{Float64}}
     @assert size(ŷ, 1) == 1
     t = -log_logistic.(ŷ)
-    t[.!y] .+= ŷ[.!y]
+    ny = .!y
+    t[ny] .+= ŷ[ny]
     e = sum(t) / size(ŷ, 2)
 
-    ∂t_over_∂y = ∇log_logistic.(ŷ, -t)
-    ∂t_over_∂y[y] .+= 1.0
+    ∂t_over_∂y = -∇log_logistic.(ŷ, -t)
+    ∂t_over_∂y[ny] .+= 1.0
     ∇y = ∂t_over_∂y
 
     (e, ∇y)

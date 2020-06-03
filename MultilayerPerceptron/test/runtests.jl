@@ -13,6 +13,13 @@ function binary_cross_entropy(ŷ::Float64, y::Bool)::Float64
     -log(ϵ + (y ? ŷ : 1.0 - ŷ))
 end
 
+# https://math.stackexchange.com/a/2503773
+function ∇binary_cross_entropy(ŷ::Float64, y::Bool)::Float64
+    let y = Float64(y)
+        (ŷ - y) / (ŷ - ŷ * ŷ)
+    end
+end
+
 @testset "Activation" begin
     sz = (5, 3)
     y = rand(Float64, sz) * 10
@@ -23,8 +30,10 @@ end
     len = 5
     ŷ = rand(Float64, 1, len)
     y = rand(Bool, 1, len)
-    (e, _) = logit_binary_cross_entropy(ŷ, y)
-    @test e ≈ sum(binary_cross_entropy.(logistic.(ŷ), y)) / len
+    (e, ∇) = logit_binary_cross_entropy(ŷ, y)
+    logistic_ŷ = logistic.(ŷ)
+    @test e ≈ sum(binary_cross_entropy.(logistic_ŷ, y)) / len
+    @test ∇ ≈ @. ∇binary_cross_entropy(logistic_ŷ, y) * ∇logistic(ŷ, logistic_ŷ)
 end
 
 @testset "Xor" begin
