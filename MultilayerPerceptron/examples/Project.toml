@@ -1,4 +1,5 @@
 [deps]
+MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 MultilayerPerceptron = "b41483c7-9031-4d73-b5e8-f72a792c9494"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
