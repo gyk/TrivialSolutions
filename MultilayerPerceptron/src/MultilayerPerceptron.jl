@@ -6,6 +6,7 @@ module MultilayerPerceptron
 include("activation.jl")
 include("loss.jl")
 include("layer.jl")
+include("util.jl")
 
 export MLP, fit!, predict
 

@@ -12,9 +12,7 @@ function preprocess(x, y=nothing)
         return mat_x
     end
 
-    mat_y = zeros(N_CLASSES, n)
-    # Creates one-hot vectors. Better to make it an `AbstractVector`.
-    mat_y[CartesianIndex.(y .+ 1, 1:n)] .= 1.0
+    mat_y = one_hot(y .+ 1, N_CLASSES)  # digits to 1-based labels
     mat_x, mat_y
 end
 
@@ -37,9 +35,9 @@ function mnist_example()
         test_y .+= 1
         test_x, test_y
     end
-    n_tests = length(test_y)
+    n_test = length(test_y)
     n_correct = 0
-    for i in 1:n_tests
+    for i in 1:n_test
         x = test_x[:, [i]]
         y = test_y[i]
         pred_label = argmax(vec(predict(mlp, x)))
@@ -47,8 +45,10 @@ function mnist_example()
             n_correct += 1
         end
     end
-    println("Accuracy = $(n_correct / n_tests)")
+    println("Accuracy = $(n_correct / n_test)")
 
     # The current configuration achieves comparable accuracy with its Flux counterpart in
     # https://github.com/FluxML/model-zoo (> 95%).
 end
+
+mnist_example()
