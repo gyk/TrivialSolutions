@@ -33,7 +33,7 @@ public class SolutionTLE {
 
         this.words = new List<string> { beginWord };
         this.words.AddRange(wordList); // `IList` may be of fixed size
-        this.graph = Enumerable.Repeat(0, nWords).Select(_ => new HashSet<int>()).ToArray();
+        this.graph = Enumerable.Range(0, nWords).Select(_ => new HashSet<int>()).ToArray();
         for (int i = 0; i < nWords; i++) {
             if (this.words[i] == endWord) {
                 this.dest = i;
