@@ -38,7 +38,7 @@ function moons_example()
     mlp = MLP([hidden_layer1, hidden_layer2, output_layer])
     fit!(mlp, train_x, train_y;
         loss_fn=logit_binary_cross_entropy,
-        learning_rate=0.05, batch_size=5, n_epochs=N)
+        learning_rate=0.2, batch_size=5, n_epochs=N)
 
     (test_x, test_y) = make_moons(250)
     pred_y = predict(mlp, test_x) .> 0.5

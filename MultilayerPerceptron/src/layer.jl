@@ -102,6 +102,20 @@ end
 #
 # Here the weights are updated layer by layer. In Flux, they are handled in a holistic manner so the
 # code is much more concise there.
+#
+# - - - - - - - -
+#
+# Within each minibatch, W stays the same across all the inputs. The computational graph is:
+#
+#         +--(*x1)--> z1 --+
+#         |                |
+#      W -+--(*x2)--> z2 --+--(+)--> Σe --(/n)--> e
+#         |                |
+#         +--(*x3)--> z3 --+
+#
+# The weights (W & b) are computed as the mean rather than sum of all data so it is consistent with
+# how the error is computed, and both the error and the magnitude of the gradient are independent of
+# batch size.
 
 """
 Given ∂e/∂y of the next layer, does back-propagation, and returns ∂e/∂y of this layer."
@@ -114,12 +128,13 @@ function backward!(l::Layer, ∂e_over_∂y::AbstractMatrix{Float64}, η::Float6
     W, b = l.weights, l.biases
     y_i, z_j, y_j = l.inputs, l.weighted_sums, l.activations
     ∇σ, ∇y_j = l.grad_fn, ∂e_over_∂y
+    n = size(y_i, 2)
 
     ∇σ_j = ∇σ.(z_j, y_j)
     ∇z_j = ∇y_j .* ∇σ_j
     ∇y_i = W' * ∇z_j
-    ∇W = ∇z_j * y_i'  # sum of all data in the batch
-    ∇b = sum(∇z_j, dims=2)
+    ∇W = (∇z_j * y_i') / n  # sum of all data in the batch
+    ∇b = sum(∇z_j, dims=2) / n
     W .-= η * ∇W
     b .-= η * ∇b
     ∇y_i

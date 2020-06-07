@@ -27,7 +27,7 @@ function mnist_example()
     mlp = MLP([hidden_layer, output_layer])
     fit!(mlp, train_x, train_y;
         loss_fn=logit_cross_entropy,
-        learning_rate=0.05, batch_size=64, n_epochs=N_EPOCHS)
+        learning_rate=5.0, batch_size=64, n_epochs=N_EPOCHS)
 
     test_x, test_y = begin
         test_x, test_y = MNIST.testdata(Float64)

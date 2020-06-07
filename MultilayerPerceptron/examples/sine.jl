@@ -14,7 +14,7 @@ function sine_example()
     output_layer = Layer((1, 3))
 
     mlp = MLP([hidden_layer1, hidden_layer2, output_layer])
-    fit!(mlp, train_x, train_y; learning_rate=0.1, batch_size=5, n_epochs=N)
+    fit!(mlp, train_x, train_y; learning_rate=0.5, batch_size=5, n_epochs=N)
 
     test_x = (0.0:0.1:(2π + 0.1))' |> collect
     test_y = sin.(test_x)

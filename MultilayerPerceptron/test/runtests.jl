@@ -47,7 +47,7 @@ end
     output_layer = Layer((1, 2))
 
     mlp = MLP([hidden_layer, output_layer])
-    fit!(mlp, train_x, train_y; learning_rate=0.1, batch_size=2, n_epochs=N)
+    fit!(mlp, train_x, train_y; learning_rate=0.2, batch_size=2, n_epochs=N)
 
     test_x, test_y = train_x, train_y
     @test round.(Int, predict(mlp, Float64.(test_x))) == test_y

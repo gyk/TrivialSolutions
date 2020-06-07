@@ -42,7 +42,7 @@ function iris_example()
     mlp = MLP([output_layer])
     fit!(mlp, train_x, oh_train_y;
         loss_fn=logit_cross_entropy,
-        learning_rate=0.1, batch_size=5, n_epochs=200)
+        learning_rate=0.2, batch_size=5, n_epochs=200)
 
     oh_pred_y = softmax(predict(mlp, test_x))
     pred_y = inv_one_hot(oh_pred_y)
@@ -54,7 +54,7 @@ function iris_example()
     println("Confusion matrix =")
     display(Float16.(confusion_matrix))
 
-    # The accuracy is usually above 90% (it varies from 70% ~ 100%).
+    # The accuracy is usually above 90% (it varies from 70% - ~100%).
 end
 
 iris_example()
