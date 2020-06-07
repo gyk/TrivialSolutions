@@ -32,6 +32,8 @@ function fit!(
     (_, n) = size(train_x)
     batch_iter = Iterators.partition(1:n, batch_size)
     n_batches = 0
+    ewma_loss = nothing  # Exponentially weighted moving average
+    α = min(8 / reporting_interval, 1.0)  # EWMA α
     for epoch in 1:n_epochs
         for cols in batch_iter
             batch_x = @view train_x[:, cols]
@@ -42,7 +44,10 @@ function fit!(
             batch_ŷ = batch_x
 
             (loss, ∂e_over_∂y) = loss_fn(batch_ŷ, batch_y)
-            (n_batches += 1) % reporting_interval == 0 ? println("#$n_batches: $loss") : nothing
+            ewma_loss = isnothing(ewma_loss) ? loss : loss * α + ewma_loss * (1.0 - α)
+            if (n_batches += 1) % reporting_interval == 0
+                println("#$n_batches: $ewma_loss")
+            end
 
             for l in Iterators.reverse(mlp.layers)
                 ∂e_over_∂y = backward!(l, ∂e_over_∂y, learning_rate)
