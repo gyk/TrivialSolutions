@@ -1,10 +1,10 @@
 namespace TopologicalSort
 
-type Vertex = int
-type Graph = Map<Vertex, Set<Vertex>>
-type TopSortResult = Cyclic | Order of Vertex list
-
 module TopologicalSort =
+  type Vertex = int
+  type Graph = Map<Vertex, Set<Vertex>>
+  type TopSortResult = Cyclic | Order of Vertex list
+
   let find k m =
     match Map.tryFind k m with
     | Some v -> v
@@ -61,16 +61,21 @@ module TopologicalSort =
     let mutable visiting = Set.empty
     let mutable cycleDetected = false
 
+    // In terms of tri-color traversal of graph, for vertex V,
+    //
+    // - V ∈ unvisited ∧ V ∉ visiting  ⟹  V is white
+    // - V ∈ unvisited ∧ V ∈ visiting  ⟹  V is gray
+    // - V ∉ unvisited  ⟹  V is black
     let rec visit (n: Vertex) =
       if not cycleDetected && Set.contains n unvisited then
-          if Set.contains n visiting then
-            cycleDetected <- true
-          else
-            visiting <- Set.add n visiting
-            for m in find n g do
-              visit m
-            unvisited <- Set.remove n unvisited
-            acc <- n::acc
+        if Set.contains n visiting then
+          cycleDetected <- true
+        else
+          visiting <- Set.add n visiting
+          for m in find n g do
+            visit m
+          unvisited <- Set.remove n unvisited
+          acc <- n::acc
 
     let rec dfs () : TopSortResult =
       if Set.isEmpty unvisited then
@@ -84,7 +89,7 @@ module TopologicalSort =
           dfs ()
     dfs ()
 
-  let smokeTest () =
+  let runExample () =
     //  6 -> 4 -> 2
     //  5 -> 3 -> 2 -> 1
     //  7 -> 3
@@ -96,5 +101,3 @@ module TopologicalSort =
     let g = addEdge (1, 6) g
     printfn "%A" <| sortKahn g
     printfn "%A" <| sortDfs g
-
-    // My code has passed exactly one test. I guess it's mature enough to publish on GitHub.
