@@ -1,23 +1,23 @@
+// Remove Invalid Parentheses (https://leetcode.com/problems/remove-invalid-parentheses/)
 using System.Collections.Generic;
 using System.Linq;
+
+// Time complexity: O(2^n)
 
 public class Solution
 {
     static (int, int) findUnbalance(string s)
     {
         int leftCnt = 0, rightCnt = 0;
-        for (int i = 0; i < s.Length; i++) {
-            switch (s[i]) {
-                case '(':
-                    leftCnt++;
-                    break;
-                case ')':
-                    if (leftCnt > 0) {
-                        leftCnt--;
-                    } else {
-                        rightCnt++;
-                    }
-                    break;
+        foreach (char c in s) {
+            if (c == '(') {
+                leftCnt++;
+            } else if (c == ')') {
+                if (leftCnt > 0) {
+                    leftCnt--;
+                } else {
+                    rightCnt++;
+                }
             }
         }
         return (leftCnt, rightCnt);
@@ -49,26 +49,31 @@ public class Solution
             switch (s[i]) {
                 case '(':
                     solve(i + 1, nLeftRemoved, nRightRemoved, balance + 1);
-                    if (nLeftRemoved < leftCnt) {
-                        removed[i] = true;
-                        solve(i + 1, nLeftRemoved + 1, nRightRemoved, balance);
-                        removed[i] = false;
-                    }
                     break;
                 case ')':
                     if (balance > 0) {
                         solve(i + 1, nLeftRemoved, nRightRemoved, balance - 1);
-                    }
-                    if (nRightRemoved < rightCnt) {
-                        removed[i] = true;
-                        solve(i + 1, nLeftRemoved, nRightRemoved + 1, balance);
-                        removed[i] = false;
                     }
                     break;
                 default:
                     solve(i + 1, nLeftRemoved, nRightRemoved, balance);
                     break;
             }
+
+            removed[i] = true;
+            switch (s[i]) {
+                case '(':
+                    if (nLeftRemoved < leftCnt) {
+                        solve(i + 1, nLeftRemoved + 1, nRightRemoved, balance);
+                    }
+                    break;
+                case ')':
+                    if (nRightRemoved < rightCnt) {
+                        solve(i + 1, nLeftRemoved, nRightRemoved + 1, balance);
+                    }
+                    break;
+            }
+            removed[i] = false;
         }
 
         solve(0, 0, 0, 0);
