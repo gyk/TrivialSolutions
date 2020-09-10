@@ -22,26 +22,19 @@ class Trie {
 class Solution {
     func findWords(_ board: [[Character]], _ words: [String]) -> [String] {
         let (nr, nc) = (board.count, board[0].count)
-        var wordTrie = Trie()
-        for w in words {
-            wordTrie.insert(w)
-        }
+        var trie = Trie()
+        words.forEach { trie.insert($0) }
 
         var visited = (0 ..< nr).map { _ in (0 ..< nc).map { _ in false } }
-        var trie = wordTrie
         var found = Set<String>()
 
-        func go(_ r: Int, _ c: Int) {
+        func go(_ r: Int, _ c: Int, _ trie: Trie) {
             guard !visited[r][c] else { return }
 
             visited[r][c] = true
             defer { visited[r][c] = false }
 
-            let oldTrie = trie
-            guard let newTrie = trie.children[board[r][c]] else { return }
-            trie = newTrie
-            defer { trie = oldTrie }
-
+            guard let trie = trie.children[board[r][c]] else { return }
             if let s = trie.s {
                 found.insert(s)
             }
@@ -49,12 +42,12 @@ class Solution {
             guard !trie.children.isEmpty else { return }
             [(r - 1, c), (r, c + 1), (r + 1, c), (r, c - 1)]
                 .filter { (r, c) in 0 ..< nr ~= r && 0 ..< nc ~= c }
-                .forEach { (r, c) in go(r, c) }
+                .forEach { (r, c) in go(r, c, trie) }
         }
 
         for r in 0 ..< nr {
             for c in 0 ..< nc {
-                go(r, c)
+                go(r, c, trie)
             }
         }
 
