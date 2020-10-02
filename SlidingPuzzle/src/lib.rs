@@ -7,6 +7,9 @@ use lazy_static::lazy_static;
 mod a_star;
 pub use a_star::AStar;
 
+mod bidirectional;
+pub use bidirectional::Bidirectional;
+
 const N: usize = 3; // 8-Puzzle
 
 pub trait Node: Clone + Eq + Hash {
@@ -480,11 +483,17 @@ mod tests {
         ];
 
         let mut a_star_solver = AStar::default();
+        let mut bd_solver = Bidirectional::default();
         for (n_steps, tiles) in puzzles.into_iter().enumerate() {
             let start = Board::from(tiles).unwrap();
             let puzzle = SlidingPuzzle::new(start, goal.clone());
-            let solution = a_star_solver.solve(&puzzle);
-            assert_eq!(solution.unwrap().len(), n_steps);
+            let a_star_solution = a_star_solver.solve(&puzzle);
+            let bd_solution = bd_solver.solve(&puzzle);
+            assert_eq!(a_star_solution.unwrap().len(), n_steps);
+            assert_eq!(bd_solution.unwrap().len(), n_steps);
+            println!("#nodes expanded: A* = {}, BD = {}",
+                a_star_solver.node_count().unwrap_or(0),
+                bd_solver.node_count().unwrap_or(0));
         }
     }
 }

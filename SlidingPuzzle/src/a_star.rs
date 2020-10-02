@@ -78,9 +78,9 @@ impl Solver for AStar {
             heuristic: problem.heuristic(start),
         };
         open_set.push(start.clone(), Reverse(score));
-        let mut closed_set = HashSet::with_capacity(1024);
+        let mut closed_set = HashSet::with_capacity(self.size_hint);
 
-        let mut parents = HashMap::with_capacity(1024);
+        let mut parents = HashMap::with_capacity(self.size_hint);
 
         while let Some((x, Reverse(curr_score))) = open_set.pop() {
             self.node_count += 1;
