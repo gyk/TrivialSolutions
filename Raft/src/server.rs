@@ -293,7 +293,7 @@ impl Server {
                 let n_votes_granted = votes_granted.len();
                 // If votes received from majority of servers, becomes leader
                 if n_votes_granted >= self.quoram() {
-                    self.state = State::new_leader(self.n_servers, self.logs.len());
+                    self.state = State::default_leader(self.n_servers, self.logs.len());
                     self.send_append_entries();
                 }
             }

@@ -28,7 +28,7 @@ pub enum Event {
     ServerCrash,
 }
 
-const WEIGHTS: &[f64] = &[1.0, 0.1, 0.1, 0.1, 0.5, 0.1]; // FIXME
+const WEIGHTS: &[f64] = &[1.0, 1.0, 0.1, 0.1, 0.5, 0.1]; // FIXME
 lazy_static! {
     static ref DIST: WeightedIndex<f64> = WeightedIndex::new(WEIGHTS).unwrap();
 }

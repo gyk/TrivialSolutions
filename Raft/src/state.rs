@@ -22,17 +22,9 @@ impl Default for State {
 }
 
 impl State {
-    pub fn new_leader(n: usize, next_index: usize) -> State {
+    pub fn default_leader(n: usize, next_index: usize) -> State {
         State::Leader {
             next_indices: vec![next_index; n],
-            match_indices: vec![None; n],
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn default_leader(n: usize) -> State {
-        State::Leader {
-            next_indices: vec![0; n],
             match_indices: vec![None; n],
         }
     }

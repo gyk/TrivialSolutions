@@ -72,7 +72,7 @@ impl Simulator {
             match ev {
                 Event::Tick(delta) => {
                     ts += delta;
-                    println!("⏰ {}", ts);
+                    println!("⏰  {}", ts);
                     // FIXME: This implies all the servers have synchronized timers, which is
                     // unrealistic.
                     for server in &mut self.servers {
@@ -85,7 +85,7 @@ impl Simulator {
                         dispatcher.pop()
                     };
                     if let Some(msg) = msg {
-                        println!("{}", msg);
+                        println!("✉️  {}", msg);
                         self.servers[msg.receiver_id].handle_message(msg);
                     }
                 }
@@ -95,7 +95,7 @@ impl Simulator {
                         dispatcher.peek().cloned()
                     };
                     if let Some(msg) = msg {
-                        println!("{}", msg);
+                        println!("✉️  {}", msg);
                         self.servers[msg.receiver_id].handle_message(msg);
                     }
                 }
@@ -106,7 +106,7 @@ impl Simulator {
                 Event::ClientCommand { key, value } => {
                     for server in &mut self.servers {
                         if server.is_leader() {
-                            println!("ClientCommand: key = {}, value = {}", key, value);
+                            println!("📞  ClientCommand: key = {}, value = {}", key, value);
                             server.handle_client_command(key, value);
                         }
                         break;
@@ -114,6 +114,9 @@ impl Simulator {
                 }
                 Event::ServerCrash => {
                     let server_id = rng.gen_range(0, self.servers.len());
+                    println!("⚰  Server #{} crashed, is_leader = {}",
+                        server_id,
+                        self.servers[server_id].is_leader());
                     self.servers[server_id].restart();
                 }
             }
