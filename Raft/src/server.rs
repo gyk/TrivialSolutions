@@ -109,7 +109,7 @@ impl Server {
                 MessageType::AppendEntriesResponse(self.on_append_entries_request(m, msg.sender_id))
             ),
 
-            MessageType::AppendEntriesResponse(m) if self.is_leader() => {
+            MessageType::AppendEntriesResponse(m) => {
                 self.on_append_entries_response(m, msg.sender_id);
                 None
             }
@@ -216,15 +216,8 @@ impl Server {
         let last_log_index = self.last_log_index();
 
         // Fig. 2 - AppendEntries - Recv impl - 5
-        if self.commit_index.is_none() || m.leader_commit > self.commit_index {
-            match last_log_index {
-                Some(idx) => {
-                    self.commit_index = Some(cmp::min(m.leader_commit.unwrap(), idx));
-                }
-                None => {
-                    self.commit_index = None;
-                }
-            }
+        if m.leader_commit > self.commit_index {
+            self.commit_index = cmp::min(m.leader_commit, last_log_index);
         }
 
         AppendEntriesResponse {
@@ -293,7 +286,7 @@ impl Server {
                 let n_votes_granted = votes_granted.len();
                 // If votes received from majority of servers, becomes leader
                 if n_votes_granted >= self.quoram() {
-                    self.state = State::new_leader(self.n_servers, self.logs.len());
+                    self.state = State::default_leader(self.n_servers, self.logs.len());
                     self.send_append_entries();
                 }
             }
@@ -309,6 +302,10 @@ impl Server {
             });
         }
         // FIXME: Respond after entry applied to state machine.
+    }
+
+    pub(crate) fn kv_map(&self) -> &HashMap<String, String> {
+        &self.kv
     }
 
     // ===== Helpers =====

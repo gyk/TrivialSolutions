@@ -6,3 +6,6 @@ edition = "2018"
 [dependencies]
 lazy_static = "1.4"
 rand = "0.7"
+
+[dev-dependencies]
+ctrlc = "3"

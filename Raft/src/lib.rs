@@ -8,6 +8,7 @@
 
 // NOTE:
 //
+// - (!) THIS IMPLEMENTATION IS VERY BUGGY AND DOES NOT WORK AT ALL.
 // - Only the state transition part is implemented, which means
 //     - Just passing around Rust struct/enum for RPCs, with no (de)serialization
 //     - No network IO / storage abstraction
@@ -28,6 +29,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 use rand::{thread_rng, Rng};
 
@@ -62,17 +64,16 @@ impl Simulator {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self, running: Arc<AtomicBool>) {
         let mut ts: u64 = 0;
         let mut rng = thread_rng();
 
-        loop {
+        while running.load(Ordering::Relaxed) {
             let ev = Event::random(&mut rng);
             println!("Event: {:?}", ev);
             match ev {
                 Event::Tick(delta) => {
                     ts += delta;
-                    println!("⏰ {}", ts);
                     // FIXME: This implies all the servers have synchronized timers, which is
                     // unrealistic.
                     for server in &mut self.servers {
@@ -85,7 +86,6 @@ impl Simulator {
                         dispatcher.pop()
                     };
                     if let Some(msg) = msg {
-                        println!("{}", msg);
                         self.servers[msg.receiver_id].handle_message(msg);
                     }
                 }
@@ -95,7 +95,6 @@ impl Simulator {
                         dispatcher.peek().cloned()
                     };
                     if let Some(msg) = msg {
-                        println!("{}", msg);
                         self.servers[msg.receiver_id].handle_message(msg);
                     }
                 }
@@ -106,16 +105,23 @@ impl Simulator {
                 Event::ClientCommand { key, value } => {
                     for server in &mut self.servers {
                         if server.is_leader() {
-                            println!("ClientCommand: key = {}, value = {}", key, value);
                             server.handle_client_command(key, value);
+                            break;
                         }
-                        break;
                     }
                 }
                 Event::ServerCrash => {
                     let server_id = rng.gen_range(0, self.servers.len());
                     self.servers[server_id].restart();
                 }
+            }
+        }
+
+        println!("\nStopping...");
+        for (i, server) in self.servers.iter().enumerate() {
+            println!("Server #{}:", i);
+            for (k, v) in server.kv_map() {
+                println!("\t{} -> {}", k, v);
             }
         }
     }
