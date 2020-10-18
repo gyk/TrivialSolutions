@@ -108,8 +108,8 @@ impl Simulator {
                         if server.is_leader() {
                             println!("📞  ClientCommand: key = {}, value = {}", key, value);
                             server.handle_client_command(key, value);
+                            break;
                         }
-                        break;
                     }
                 }
                 Event::ServerCrash => {

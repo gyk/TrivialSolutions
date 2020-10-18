@@ -216,15 +216,8 @@ impl Server {
         let last_log_index = self.last_log_index();
 
         // Fig. 2 - AppendEntries - Recv impl - 5
-        if self.commit_index.is_none() || m.leader_commit > self.commit_index {
-            match last_log_index {
-                Some(idx) => {
-                    self.commit_index = Some(cmp::min(m.leader_commit.unwrap(), idx));
-                }
-                None => {
-                    self.commit_index = None;
-                }
-            }
+        if m.leader_commit > self.commit_index {
+            self.commit_index = cmp::min(m.leader_commit, last_log_index);
         }
 
         AppendEntriesResponse {
