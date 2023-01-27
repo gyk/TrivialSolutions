@@ -1,94 +1,32 @@
 //! # Web of Lies
 //!
-//! Failed, time limit exceeded
+//! Failed (time limit exceeded)
 //!
 //! - https://codeforces.com/problemset/problem/1548/A
 //! - https://alphacode.deepmind.com/#problem=1
 
-use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
+use std::collections::HashSet;
 use std::io::{self, prelude::*};
-
-type Web = BTreeMap<usize, BTreeSet<usize>>;
-
-fn add_friends(web: &mut Web, u: usize, v: usize) {
-    fn add_friends_impl(web: &mut Web, u: usize, v: usize) {
-        match web.entry(u) {
-            Entry::Vacant(vac) => {
-                let singleton = BTreeSet::from_iter(vec![v]);
-                vac.insert(singleton);
-            }
-            Entry::Occupied(mut o) => {
-                o.get_mut().insert(v);
-            }
-        }
-    }
-
-    add_friends_impl(web, u, v);
-    add_friends_impl(web, v, u);
-}
-
-fn remove_friends(web: &mut Web, u: usize, v: usize) {
-    fn remove_friends_impl(web: &mut Web, u: usize, v: usize) {
-        match web.entry(u) {
-            Entry::Vacant(..) => (),
-            Entry::Occupied(mut o) => {
-                o.get_mut().remove(&v);
-            }
-        }
-    }
-
-    remove_friends_impl(web, u, v);
-    remove_friends_impl(web, v, u);
-}
-
-#[allow(dead_code)]
-fn process(mut web: Web) -> usize {
-    fn process_impl(web: &mut Web, starts_from: usize) -> Option<usize> {
-        for (u, friends) in web.range(starts_from..) {
-            if let Some(lowest_friend) = friends.iter().next() {
-                if lowest_friend > u {
-                    return Some(*u);
-                }
-            }
-        }
-        None
-    }
-
-    let mut starts_from = 1;
-
-    let mut n_killed = 0;
-    while let Some(killed) = process_impl(&mut web, starts_from) {
-        starts_from = killed + 1;
-        if let Some(friends) = web.remove(&killed) {
-            n_killed += 1;
-            for f in friends {
-                remove_friends(&mut web, f, killed);
-            }
-        }
-    }
-    n_killed
-}
-
-fn process2(web: &Web) -> usize {
-    let mut n_killed = 0;
-    for (u, friends) in web.iter() {
-        if friends.range((u + 1)..).next().is_some() {
-            n_killed += 1;
-        }
-    }
-    n_killed
-}
 
 fn solve<B: BufRead, W: Write>(mut scan: Scanner<B>, mut w: W) {
     let n: usize = scan.token();
     let m: usize = scan.token();
 
-    let mut web = Web::new();
+    let mut web = vec![HashSet::new(); n];
 
-    for _ in 0..m {
+    fn read_pair<B: BufRead>(scan: &mut Scanner<B>) -> (usize, usize) {
         let u: usize = scan.token();
         let v: usize = scan.token();
-        add_friends(&mut web, u, v);
+        if u > v {
+            (v, u)
+        } else {
+            (u, v)
+        }
+    }
+
+    for _ in 0..m {
+        let (u, v) = read_pair(&mut scan);
+        web[u].insert(v);
     }
 
     let q: usize = scan.token();
@@ -96,17 +34,15 @@ fn solve<B: BufRead, W: Write>(mut scan: Scanner<B>, mut w: W) {
         let t: usize = scan.token();
         match t {
             1 => {
-                let u: usize = scan.token();
-                let v: usize = scan.token();
-                add_friends(&mut web, u, v);
+                let (u, v) = read_pair(&mut scan);
+                web[u].insert(v);
             }
             2 => {
-                let u: usize = scan.token();
-                let v: usize = scan.token();
-                remove_friends(&mut web, u, v);
+                let (u, v) = read_pair(&mut scan);
+                web[u].remove(&v);
             }
             3 => {
-                let n_killed = process2(&web);
+                let n_killed = web.iter().filter(|s| !s.is_empty()).count();
                 writeln!(w, "{}", n - n_killed).unwrap();
                 let _ = w.flush();
             }
