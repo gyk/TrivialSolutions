@@ -1,0 +1,17 @@
+name = "BytePairEncoding"
+uuid = "408538cb-b6f2-46e8-a3c6-48f667504f99"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+
+[extras]
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Downloads", "JSON", "Test"]
