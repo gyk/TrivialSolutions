@@ -1,0 +1,7 @@
+name = "MonteCarloTreeSearch"
+uuid = "ee417265-cd4d-4eb8-9dc6-f36e4d0f8cf6"
+authors = ["Yukun Guo <gyk.net@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
