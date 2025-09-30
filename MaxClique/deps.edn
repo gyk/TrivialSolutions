@@ -1,0 +1,13 @@
+{:deps {org.babashka/spec.alpha {:git/url "https://github.com/babashka/spec.alpha"
+                                   :git/sha "b6eb0f2208ab036c0a5d0e7235cb0b09d2feabb7"}}
+
+ :paths ["."]
+
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {io.github.cognitect-labs/test-runner
+                               {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+                  :main-opts ["-m" "cognitect.test-runner"]
+                  :exec-fn cognitect.test-runner.api/test}
+
+           :fmt {:extra-deps {zprint/zprint {:mvn/version "1.2.8"}}
+                 :main-opts ["-m" "zprint.main" "-lfsw" "deps.edn"]}}}

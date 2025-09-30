@@ -1,0 +1,10 @@
+{:width   100
+ :style   [:respect-nl :justified]
+ :list    {:constant-pair? true}
+ :binding {:justify? true
+           :justify  {:max-variance 60}}
+ :map     {:comma?   false
+           :justify? true
+           :justify  {:max-variance 60}
+           :sort?    false}
+ :vector  {:respect-nl? true}}
